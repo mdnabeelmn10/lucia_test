@@ -25,8 +25,13 @@ SECRET_KEY = 'django-insecure-z$od%-!=m#3fzu2*6c3adcs9om*@$+o7o7@d&((+7rxv2jbe1y
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+#ALLOWED_HOSTS = []
+import dj_database_url
+import os
 
+DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
+
+ALLOWED_HOSTS = ['your-heroku-app-name.herokuapp.com']
 
 # Application definition
 
