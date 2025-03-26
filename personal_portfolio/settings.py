@@ -31,7 +31,7 @@ import os
 
 DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
 
-ALLOWED_HOSTS = ['lucia_test.herokuapp.com']
+ALLOWED_HOSTS = ['lucia-test.herokuapp.com']
 
 # Application definition
 
