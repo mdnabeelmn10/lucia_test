@@ -139,8 +139,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # WhiteNoise Middleware for serving static files
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Ensure this is added
-    ...
+    'whitenoise.middleware.WhiteNoiseMiddleware'
 ]
 
 # Static file storage
@@ -153,8 +152,6 @@ DATABASES = {
 
 # Ensure INSTALLED_APPS includes 'whitenoise'
 INSTALLED_APPS = [
-    ...
     'whitenoise.runserver_nostatic',  # Ensure this is added before 'django.contrib.staticfiles'
-    'django.contrib.staticfiles',
-    ...
+    'django.contrib.staticfiles'
 ]
