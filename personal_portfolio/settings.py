@@ -132,18 +132,29 @@ import dj_database_url
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# Static files
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# WhiteNoise middleware (add at the TOP of MIDDLEWARE list)
+# WhiteNoise Middleware for serving static files
 MIDDLEWARE = [
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # This must be at the top
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Ensure this is added
     ...
 ]
 
-# Enable WhiteNoise storage
+# Static file storage
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+# Database settings (Fix DATABASES definition)
 DATABASES = {
     'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
 }
+
+# Ensure INSTALLED_APPS includes 'whitenoise'
+INSTALLED_APPS = [
+    ...
+    'whitenoise.runserver_nostatic',  # Ensure this is added before 'django.contrib.staticfiles'
+    'django.contrib.staticfiles',
+    ...
+]
