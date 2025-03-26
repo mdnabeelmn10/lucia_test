@@ -1,1 +1,1 @@
-web: gunicorn lucia_test.wsgi --log-file - 
+web: gunicorn personal_portfolio.wsgi --log-file - 
