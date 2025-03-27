@@ -19,5 +19,6 @@ from django.urls import path
 from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("", include("pages.urls")),
+    path('', include('pages.urls')),  # Root URL handled by pages app
+    path('pages/', include('pages.urls')),
 ]
