@@ -153,10 +153,12 @@ DATABASES = {
 INSTALLED_APPS = [
     'whitenoise.runserver_nostatic',  # Ensure this is added before 'django.contrib.staticfiles'
     'django.contrib.staticfiles',
-    "pages.apps.PagesConfig",
+    #"pages.apps.PagesConfig",
+    'rest_framework', 
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'pages'
 ]
