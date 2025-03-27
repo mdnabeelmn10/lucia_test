@@ -144,9 +144,13 @@ MIDDLEWARE = [
 # Static file storage
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# Database settings (Fix DATABASES definition)
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 DATABASES = {
-    'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
 
 # Ensure INSTALLED_APPS includes 'whitenoise'
