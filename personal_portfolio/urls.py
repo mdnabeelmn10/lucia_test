@@ -21,4 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('pages.urls')),  # Root URL handled by pages app
     path('pages/', include('pages.urls')),
+    path('hello/', views.hello_world, name='hello_world')
 ]
