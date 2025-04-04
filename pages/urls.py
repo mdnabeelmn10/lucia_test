@@ -4,4 +4,5 @@ from .views import home,create_item
 urlpatterns = [
     path('', home, name='home'),  # Root URL
     path('items/create/', create_item, name='create_item'),
+    path('home/',home,name='home'),
 ]
