@@ -19,3 +19,13 @@ def create_item(request):
         #serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(['POST'])
+def validate_login(self, email, password):
+    """Validate login credentials."""
+    allowed_passwords = {"abcde", "12345"}
+    
+    if password in allowed_passwords:
+        return 1  # Valid login
+    else:
+        return 0  # Invalid login
