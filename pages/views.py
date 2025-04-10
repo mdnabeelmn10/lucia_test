@@ -21,11 +21,17 @@ def create_item(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 @api_view(['POST'])
-def validate_login(self, email, password):
+def validate_login(request):
     """Validate login credentials."""
     allowed_passwords = {"abcde", "12345"}
     
+    email = request.data.get('email')
+    password = request.data.get('password')
+
+    if not email or not password:
+        return Response({'error': 'Email and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
     if password in allowed_passwords:
-        return 1  # Valid login
+        return Response({'valid': 1}, status=status.HTTP_200_OK)
     else:
-        return 0  # Invalid login
+        return Response({'valid': 0}, status=status.HTTP_200_OK)
