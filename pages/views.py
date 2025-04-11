@@ -24,7 +24,7 @@ def create_item(request):
 def validate_login(request):
     """Validate login credentials."""
     allowed_passwords = {"abcde", "12345"}
-    
+    print("Request DATA: ", request.data)
     #email = request.data.get('email') or request.POST.get('email')
     #password = request.data.get('password') or request.POST.get('password')
     form_fields = request.data.get('form_fields', {})
