@@ -27,8 +27,9 @@ def validate_login(request):
     
     #email = request.data.get('email') or request.POST.get('email')
     #password = request.data.get('password') or request.POST.get('password')
-    email = request.POST.get('email')
-    password = request.POST.get('password')
+    form_fields = request.data.get('form_fields', {})
+    email = form_fields.get('email')
+    password = form_fields.get('password')
     if not email or not password:
         return Response({'error': 'Email and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
