@@ -165,3 +165,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'pages'
 ]
+INSTALLED_APPS += ['corsheaders']
+MIDDLEWARE = ['corsheaders.middleware.CorsMiddleware'] + MIDDLEWARE
+
+CORS_ALLOW_ALL_ORIGINS = True 
