@@ -37,10 +37,33 @@ def validate_login(request):
     if not password:
         password = request.data.get('password') or request.POST.get('password')
 
+    # Check if email and password exist
     if not email or not password:
-        return Response({'error': 'Email and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            "success": False,
+            "data": {
+                "message": "Email and password are required.",
+                "errors": [],
+                "data": []
+            }
+        }, status=status.HTTP_400_BAD_REQUEST)
 
+    # Password check
     if password in allowed_passwords:
-        return Response({'valid': 1}, status=status.HTTP_200_OK)
+        return Response({
+            "success": True,
+            "data": {
+                "message": "Login successful",
+                "errors": [],
+                "data": []
+            }
+        }, status=status.HTTP_200_OK)
     else:
-        return Response({'valid': 0}, status=status.HTTP_200_OK)
+        return Response({
+            "success": False,
+            "data": {
+                "message": "Invalid password.",
+                "errors": [],
+                "data": []
+            }
+        }, status=status.HTTP_200_OK)
