@@ -20,34 +20,22 @@ def create_item(request):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-from rest_framework.decorators import api_view, parser_classes
-from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.response import Response
-from rest_framework import status
-
 @api_view(['POST'])
-@parser_classes([FormParser, MultiPartParser])
 def validate_login(request):
-    """Validate login credentials."""
+    """Validate login credentials from Elementor form."""
     allowed_passwords = {"abcde", "12345"}
 
-    print("Request DATA:", request.data)
-    print("Request POST:", request.POST)
-    print("Request body:", request.body)
+    print("Raw DATA: ", request.data)
 
-    # Elementor often nests form fields
-    email = (
-        request.data.get("form_fields[email]") or
-        request.POST.get("form_fields[email]") or
-        request.data.get("email") or
-        request.POST.get("email")
-    )
-    password = (
-        request.data.get("form_fields[password]") or
-        request.POST.get("form_fields[password]") or
-        request.data.get("password") or
-        request.POST.get("password")
-    )
+    # Try getting from structured 'form_fields[field]' first
+    email = request.data.get('form_fields[email]')
+    password = request.data.get('form_fields[password]')
+
+    # Fallbacks for direct fields
+    if not email:
+        email = request.data.get('email') or request.POST.get('email')
+    if not password:
+        password = request.data.get('password') or request.POST.get('password')
 
     if not email or not password:
         return Response({'error': 'Email and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
