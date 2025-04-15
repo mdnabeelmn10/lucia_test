@@ -33,9 +33,9 @@ def validate_login(request):
 
     # Fallbacks for direct fields
     if not email:
-        email = request.data.get('email') or request.POST.get('email')
+        email = request.data.get('email') or request.POST.get('email') or request.data.get('Email') or request.POST.get('Email')
     if not password:
-        password = request.data.get('password') or request.POST.get('password')
+        password = request.data.get('password') or request.POST.get('password') or request.data.get('Password') or request.POST.get('Password')
 
     # Check if email and password exist
     if not email or not password:
