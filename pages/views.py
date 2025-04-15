@@ -50,11 +50,17 @@ def validate_login(request):
 
     if password in allowed_passwords:
         return Response({
-            "login_status": "valid", 
-            "message": "Login successful"
-            }, status=200)
+            "success": True,
+            "data": {
+                "message": "✅ Login successful.",
+                "data": []
+            }
+        }, status=status.HTTP_200_OK)
     else:
         return Response({
-        "login_status": "invalid", 
-        "message": "Invalid credentials"
-        }, status=200)
+            "success": True,
+            "data": {
+                "message": "❌ Invalid credentials.",
+                "data": []
+            }
+        }, status=status.HTTP_200_OK)
