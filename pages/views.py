@@ -48,22 +48,15 @@ def validate_login(request):
             }
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Password check
     if password in allowed_passwords:
         return Response({
-            "success": True,
-            "data": {
-                "message": "Login successful",
-                "errors": [],
-                "data": []
-            }
-        }, status=status.HTTP_200_OK)
+            'success': True,
+            'message': 'Login successful',
+            'login_status': 'valid'
+        })
     else:
         return Response({
-            "success": False,
-            "data": {
-                "message": "Invalid password.",
-                "errors": [],
-                "data": []
-            }
-        }, status=status.HTTP_200_OK)
+            'success': False,
+            'message': 'Invalid login',
+            'login_status': 'invalid'
+        })
