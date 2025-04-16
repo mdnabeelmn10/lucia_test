@@ -41,7 +41,8 @@ def validate_login(request):
         
     if not password:
         password = request.data.get('password') or request.POST.get('password') or request.data.get('Password') or request.POST.get('Password')
-
+    print("Email here", email)
+    print("Password here", password)
     # Check if email and password exist
     if not email or not password:
         return Response({
