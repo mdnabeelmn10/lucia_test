@@ -4,6 +4,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Item
 from .serializers import ItemSerializer
+import logging
+logger = logging.getLogger(__name__)
+
+
 @api_view(['GET'])
 def hello_world(request):
     return Response({"message": "Hello, Shiney"})
@@ -34,6 +38,7 @@ def validate_login(request):
     # Fallbacks for direct fields
     if not email:
         email = request.data.get('email') or request.POST.get('email') or request.data.get('Email') or request.POST.get('Email')
+        
     if not password:
         password = request.data.get('password') or request.POST.get('password') or request.data.get('Password') or request.POST.get('Password')
 
@@ -49,6 +54,7 @@ def validate_login(request):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     if password in allowed_passwords:
+        logger.info("✅ Login successful for user@example.com")
         return Response({
             "success": True,
             "data": {
@@ -57,6 +63,7 @@ def validate_login(request):
             }
         }, status=status.HTTP_200_OK)
     else:
+        logger.error("❌ Login failed!")
         return Response({
             "success": True,
             "data": {
