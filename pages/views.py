@@ -66,7 +66,7 @@ def validate_login(request):
     else:
         logger.error("❌ Login failed!")
         return Response({
-            "success": True,
+            "success": False,
             "data": {
                 "message": "❌ Invalid credentials.",
                 "data": []
