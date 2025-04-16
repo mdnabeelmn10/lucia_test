@@ -53,7 +53,12 @@ def validate_login(request):
                 "data": []
             }
         }, status=status.HTTP_400_BAD_REQUEST)
-
+    print("Response sending:", {
+      "success": True,
+      "data": {
+          "message": "✅ Login successful."
+      }
+     })
     if password in allowed_passwords:
         logger.info("✅ Login successful for user@example.com")
         return Response({
