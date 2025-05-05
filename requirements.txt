@@ -7,6 +7,8 @@ djangorestframework==3.16.0
 djangorestframework_simplejwt==5.5.0
 gunicorn==23.0.0
 packaging==25.0
+psycopg==3.2.7
+psycopg-binary==3.2.7
 PyJWT==2.9.0
 rest-framework-simplejwt==0.0.2
 simplejwt==2.0.1
