@@ -15,7 +15,7 @@ ALLOWED_HOSTS = ['lucia-test.herokuapp.com', 'lucia-test1-a0caeccdefd5.herokuapp
 DATABASES = {
     'default': dj_database_url.config(
         # default=os.getenv('DATABASE_URL', 'sqlite:///db.sqlite3')
-        default= 'sqlite:///db.sqlite3'
+        default= 'postgres://u8v6d3k9cdqfil:pd65f4ab8483de9bc348ea378699deaea6ac9435e4e8ca04dc2a4d324856e91c4@cb5ajfjosdpmil.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d27eo25bqdg6c1'
     )
 }
 

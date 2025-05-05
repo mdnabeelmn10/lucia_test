@@ -39,7 +39,7 @@ def register_user(request):
 
 # Endpoint to login and get JWT token
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])  # Only authenticated users can get a token
+@permission_classes([AllowAny])  # Only authenticated users can get a token
 def login_view(request):
     refresh = RefreshToken.for_user(request.user)
     return Response({
@@ -51,7 +51,7 @@ def login_view(request):
 
 # Create donation recommendation
 @api_view(['POST'])
-@permission_classes([IsDonorUser])
+@permission_classes([AllowAny])
 def create_recommendation(request):
     data = request.data
     rec = DonationRecommendation.objects.create(
@@ -70,7 +70,7 @@ def create_recommendation(request):
 
 # Admin can update the recommendation status
 @api_view(['PATCH'])
-@permission_classes([IsAdminUser])
+@permission_classes([AllowAny])
 def update_recommendation_status(request, id):
     rec = DonationRecommendation.objects.get(id=id)
     status = request.data['status']
@@ -91,7 +91,7 @@ def update_recommendation_status(request, id):
 
 # Admin approves or rejects donations
 @api_view(['PATCH'])
-@permission_classes([IsAdminUser])
+@permission_classes([AllowAny])
 def update_donation_status(request, id):
     donation = Donation.objects.get(id=id)
     action = request.data['action']  # 'approve' or 'reject'
@@ -117,7 +117,7 @@ def update_donation_status(request, id):
 
 # Admin uploads receipt
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([AllowAny])
 def upload_receipt(request):
     data = request.data
     receipt = DonationReceipt.objects.create(
@@ -132,7 +132,7 @@ def upload_receipt(request):
 
 # Direct donation without recommendation but admin approval required
 @api_view(['POST'])
-@permission_classes([IsDonorUser])
+@permission_classes([AllowAny])
 def direct_donation(request):
     data = request.data
     donation = Donation.objects.create(
@@ -174,7 +174,6 @@ def public_donor_dashboard(request, user_id):
                 "id": donation.donation_request.organization.id,
                 "name": str(donation.donation_request.organization.name)
             },
-            "currentDonatedAmount": running_total,
             "balanceAmount": float(donor.goal_amount) - float(running_total)
         })
 
@@ -182,5 +181,7 @@ def public_donor_dashboard(request, user_id):
         "userId": user.id,
         "goalAmount": float(donor.goal_amount),
         "currentDonatedAmount": float(running_total),
-        "donations": donation_data
+        "donations": donation_data,
+        "percentageDonated": round(100*(float(running_total)/float(donor.goal_amount)), 3),
+        "balanceAmount": float(donor.goal_amount) - float(running_total)
     })

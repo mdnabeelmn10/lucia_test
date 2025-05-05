@@ -22,9 +22,9 @@ class Donor(models.Model):
     def __str__(self):
         return self.full_name
 
-# DAF Account Model
+# DAFAccount Model
 class DAFAccount(models.Model):
-    donor = models.ForeignKey(Donor, on_delete=models.CASCADE)
+    donor = models.OneToOneField(Donor, on_delete=models.CASCADE)
     brokerage_url = models.URLField()
     balance = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
