@@ -4,11 +4,14 @@ from .permissions import IsAdminUser, IsDonorUser
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from django.utils import timezone
+from django.contrib.auth import authenticate
+from django.contrib.auth import get_user_model
 from .models import DonationRecommendation, Donation, DonationReceipt, Message
 from .serializers import (
     DonationRecommendationSerializer,
     DonationSerializer,
     DonationReceiptSerializer,
+    LoginSerializer,
     UserRegisterSerializer,
     CustomUser
 )
@@ -37,15 +40,52 @@ def register_user(request):
 
 
 
-# Endpoint to login and get JWT token
 @api_view(['POST'])
-@permission_classes([AllowAny])  # Only authenticated users can get a token
+@permission_classes([AllowAny])
 def login_view(request):
-    refresh = RefreshToken.for_user(request.user)
+    serializer = LoginSerializer(data=request.data)
+    
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    email = serializer.validated_data['email']
+    password = serializer.validated_data['password']
+
+    try:
+        User = get_user_model()
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        return Response(
+            {"detail": "Invalid email or password."},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    user = authenticate(request, username=user.username, password=password)
+
+    if user is None:
+        return Response(
+            {"detail": "Invalid email or password."},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    if not user.is_active:
+        return Response(
+            {"detail": "User account is disabled."},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    refresh = RefreshToken.for_user(user)
+
     return Response({
         'refresh': str(refresh),
         'access': str(refresh.access_token),
-    })
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'role': getattr(user, 'role', None),
+        }
+    }, status=status.HTTP_200_OK)
 
 
 
@@ -179,6 +219,7 @@ def public_donor_dashboard(request, user_id):
 
     return Response({
         "userId": user.id,
+        "donorName": user.donor.full_name,
         "goalAmount": float(donor.goal_amount),
         "currentDonatedAmount": float(running_total),
         "donations": donation_data,
