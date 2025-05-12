@@ -2,18 +2,14 @@ asgiref==3.8.1
 dj-database-url==2.3.0
 Django==5.1.7
 django-cors-headers==4.7.0
-django-jazzmin @ git+https://github.com/farridav/django-jazzmin.git@d269874c96fe5ff6d231c3017cdd4650bc2f3105
+django-jazzmin==3.0.1
 djangorestframework==3.16.0
 djangorestframework_simplejwt==5.5.0
 gunicorn==23.0.0
 packaging==25.0
-psycopg==3.2.7
-psycopg-binary==3.2.7
+psycopg2-binary==2.9.10
 PyJWT==2.9.0
-rest-framework-simplejwt==0.0.2
-simplejwt==2.0.1
 sqlparse==0.5.3
-typing==3.7.4.3
 typing_extensions==4.13.2
 tzdata==2025.2
 whitenoise==6.9.0
