@@ -182,13 +182,8 @@ def direct_donation(request):
     )
     return Response(DonationSerializer(donation).data, status=201)
 
-from rest_framework.pagination import PageNumberPagination
-from urllib.parse import urlencode
 
-class DonationPagination(PageNumberPagination):
-    page_size = 4  # Default items per page
-    page_size_query_param = 'page_size'
-
+# Dashboard View
 @api_view(['GET'])
 # @permission_classes([AllowAny])
 def public_donor_dashboard(request, user_id):
@@ -202,15 +197,11 @@ def public_donor_dashboard(request, user_id):
 
     donations_qs = Donation.objects.filter(donation_request__donor=donor).order_by('approved_at')
 
-    # Paginate the queryset
-    paginator = DonationPagination()
-    page = paginator.paginate_queryset(donations_qs, request)
-
     donation_data = []
     running_total = 0
     total_donated = sum(d.amount for d in donations_qs)
 
-    for donation in page:
+    for donation in donations_qs:
         running_total += donation.amount
         donation_data.append({
             "id": donation.id,
@@ -226,14 +217,6 @@ def public_donor_dashboard(request, user_id):
             "balanceAmount": float(donor.goal_amount) - float(running_total)
         })
 
-    base_url = request.build_absolute_uri('?')
-    query_params = request.GET.copy()
-
-    next_url = paginator.get_next_link()
-    if next_url:
-        query_params['page'] = paginator.page.next_page_number()
-        next_url = f"{request.build_absolute_uri(request.path)}?{urlencode(query_params)}"
-
     return Response({
         "userName": user.username,
         "donorName": donor.full_name,
@@ -241,8 +224,5 @@ def public_donor_dashboard(request, user_id):
         "currentDonatedAmount": float(total_donated),
         "donations": donation_data,
         "percentageDonated": round(100 * (float(total_donated) / float(donor.goal_amount)), 3),
-        "balanceAmount": float(donor.goal_amount) - float(total_donated),
-        "pagination": {
-            "nextPageUrl": next_url
-        }
+        "balanceAmount": float(donor.goal_amount) - float(total_donated)
     })
