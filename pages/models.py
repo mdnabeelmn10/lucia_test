@@ -1,17 +1,24 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from .helpers import generate_unix_id
 
 # Custom User Model
 class CustomUser(AbstractUser):
-    donor = models.ForeignKey('Donor', on_delete=models.CASCADE, null=True, blank=True)
+    id = models.BigIntegerField(primary_key=True, default=generate_unix_id, editable=False)
+    donor = models.OneToOneField('Donor', on_delete=models.CASCADE, null=True, blank=True, related_name='user')
     role = models.CharField(max_length=20, choices=[
         ('admin', 'Admin'),
         ('donor', 'Donor'),
     ])
 
+    def __str__(self):
+        return self.username
+
+
 # Donor Model
 class Donor(models.Model):
+    id = models.BigIntegerField(primary_key=True, default=generate_unix_id, editable=False)
     full_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
@@ -24,6 +31,7 @@ class Donor(models.Model):
 
 # DAFAccount Model
 class DAFAccount(models.Model):
+    id = models.BigIntegerField(primary_key=True, default=generate_unix_id, editable=False)
     donor = models.OneToOneField(Donor, on_delete=models.CASCADE)
     brokerage_url = models.URLField()
     balance = models.DecimalField(max_digits=10, decimal_places=2)
@@ -34,6 +42,7 @@ class DAFAccount(models.Model):
 
 # Organization Model
 class Organization(models.Model):
+    id = models.BigIntegerField(primary_key=True, default=generate_unix_id, editable=False)
     name = models.CharField(max_length=255)
     ein = models.CharField(max_length=50)
     address = models.TextField()
@@ -46,6 +55,7 @@ class Organization(models.Model):
 
 # Donation Recommendation Model
 class DonationRecommendation(models.Model):
+    id = models.BigIntegerField(primary_key=True, default=generate_unix_id, editable=False)
     STATUS_CHOICES = (
         ('pending', 'Pending'),
         ('approved', 'Approved'),
@@ -64,8 +74,9 @@ class DonationRecommendation(models.Model):
     def __str__(self):
         return f"Recommendation to {self.organization.name}"
 
-# Admin Model (For managing donations and recommendations)
+# Admin Model
 class Admin(models.Model):
+    id = models.BigIntegerField(primary_key=True, default=generate_unix_id, editable=False)
     name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=100)
@@ -75,6 +86,7 @@ class Admin(models.Model):
 
 # Donation Request Model
 class DonationRequest(models.Model):
+    id = models.BigIntegerField(primary_key=True, default=generate_unix_id, editable=False)
     STATUS_CHOICES = (
         ('pending', 'Pending'),
         ('approved', 'Approved'),
@@ -96,6 +108,7 @@ class DonationRequest(models.Model):
 
 # Donation Model
 class Donation(models.Model):
+    id = models.BigIntegerField(primary_key=True, default=generate_unix_id, editable=False)
     donation_request = models.OneToOneField(DonationRequest, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     approved_at = models.DateTimeField()
@@ -106,6 +119,7 @@ class Donation(models.Model):
 
 # Donation Receipt Model
 class DonationReceipt(models.Model):
+    id = models.BigIntegerField(primary_key=True, default=generate_unix_id, editable=False)
     donation = models.OneToOneField(Donation, on_delete=models.CASCADE)
     received_at = models.DateTimeField()
     signed_pdf_url = models.URLField()
@@ -114,8 +128,9 @@ class DonationReceipt(models.Model):
     def __str__(self):
         return f"Receipt for Donation {self.donation.id}"
 
-# Vote Model (For admins voting on donations)
+# Vote Model
 class Vote(models.Model):
+    id = models.BigIntegerField(primary_key=True, default=generate_unix_id, editable=False)
     DECISION_CHOICES = (
         ('approve', 'Approve'),
         ('disapprove', 'Disapprove'),
@@ -131,8 +146,9 @@ class Vote(models.Model):
     def __str__(self):
         return f"Vote on {self.recommendation}"
 
-# Message Model (For communications between donor and admin)
+# Message Model
 class Message(models.Model):
+    id = models.BigIntegerField(primary_key=True, default=generate_unix_id, editable=False)
     donor = models.ForeignKey(Donor, on_delete=models.CASCADE)
     subject = models.CharField(max_length=255)
     body = models.TextField()
@@ -144,6 +160,7 @@ class Message(models.Model):
 
 # Password Reset Model
 class PasswordReset(models.Model):
+    id = models.BigIntegerField(primary_key=True, default=generate_unix_id, editable=False)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     token = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -5,6 +5,7 @@ urlpatterns = [
     # Donor-facing endpoints
     path('register/', views.register_user, name='register_user'),
     path('login/', views.login_view, name='login_user'),
+    path('update-password/', views.update_password_by_email, name='update_password_by_email'),
     path('dashboard/<int:user_id>/', views.public_donor_dashboard, name='public_donor_dashboard'),
 
     # path('logout/', views.logout_user, name='logout_user'),

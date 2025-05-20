@@ -38,6 +38,36 @@ def register_user(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def update_password_by_email(request):
+    email = request.data.get('email')
+    new_password = request.data.get('new_password')
+
+    if not email or not new_password:
+        return Response(
+            {"detail": "Email and new_password are required."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    User = get_user_model()
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        return Response(
+            {"detail": "User with this email does not exist."},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    user.set_password(new_password)
+    user.save()
+
+    return Response(
+        {"detail": "Password updated successfully."},
+        status=status.HTTP_200_OK
+    )
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -73,6 +103,9 @@ def login_view(request):
             status=status.HTTP_403_FORBIDDEN
         )
 
+    # Get donor ID from related object
+    donor_id = getattr(user.donor, 'id', None)  # Safe access to related Donor object
+
     refresh = RefreshToken.for_user(user)
 
     return Response({
@@ -83,6 +116,7 @@ def login_view(request):
             'username': user.username,
             'email': user.email,
             'role': getattr(user, 'role', None),
+            'donorId': donor_id,
         }
     }, status=status.HTTP_200_OK)
 

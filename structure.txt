@@ -5,6 +5,7 @@
     ├── pages
     │   ├── admin.py
     │   ├── apps.py
+    │   ├── helpers.py
     │   ├── __init__.py
     │   ├── migrations
     │   │   ├── __init__.py
