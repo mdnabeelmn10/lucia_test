@@ -9,6 +9,10 @@ urlpatterns = [
     path('dashboard/<int:user_id>/update/', views.update_donor_dashboard, name='update_donor_dashboard'),
 
 
+    path('donations/<int:donation_id>/', views.get_donation_details, name='get_donation_details'),
+    path('donations/<int:donation_id>/update/', views.update_donation_details, name='update_donation_details'),
+
+
     # path('logout/', views.logout_user, name='logout_user'),
     # path('recommendation/create/', views.create_recommendation, name='create_recommendation'),
     # path('donation/direct/', views.direct_donation, name='direct_donation'),

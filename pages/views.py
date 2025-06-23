@@ -15,7 +15,7 @@ from .serializers import (
     UserRegisterSerializer,
     CustomUser
 )
-
+from decimal import Decimal, InvalidOperation
 from pprint import pprint
 from rest_framework import status
 from rest_framework.response import Response
@@ -130,7 +130,7 @@ def _get_donor_dashboard_data(donor, user):
             "amount": donation.amount,
             "approvedAt": donation.approved_at,
             "sentAt": donation.sent_at,
-            "status": 'Accepted',
+            "purpose": "Purpose",
             "dafAccountId": donation.donation_request.daf_account.id,
             "organisation": {
                 "id": donation.donation_request.organization.id,
@@ -140,7 +140,10 @@ def _get_donor_dashboard_data(donor, user):
         })
 
     return {
-        "userName": user.username,
+        "user": {
+            "id": user.id,
+            "userName": user.username,
+        },
         "donorName": donor.full_name,
         "goalAmount": float(donor.goal_amount),
         "currentDonatedAmount": float(total_donated),
@@ -227,15 +230,104 @@ def update_donor_dashboard(request, user_id):
     return Response(dashboard_data, status=status.HTTP_200_OK)
 
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_donation_details(request, donation_id):
+    """
+    Retrieves the details of a single donation by its unique ID.
+    """
+    try:
+        # Updated .select_related() to fetch only the necessary related objects.
+        donation = Donation.objects.select_related(
+            'donation_request__organization',
+            'donation_request__daf_account'
+        ).get(id=donation_id)
 
-"""
-{
-    "userName": "daathwi",
-    "donorName": "Daathwi Naagh",
-    "goalAmount": 500000.0,
-    "currentDonatedAmount": 0.0,
-    "donations": [],
-    "percentageDonated": 0.0,
-    "balanceAmount": 500000.0
-}
-"""
+    except Donation.DoesNotExist:
+        # If no donation is found, return a standard 404 error.
+        return Response(
+            {"detail": f"Donation with ID {donation_id} not found."},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Construct the response dictionary without the balanceAmount field.
+    response_data = {
+        "id": donation.id,
+        "amount": donation.amount,
+        "approvedAt": donation.approved_at,
+        "sentAt": donation.sent_at,
+        "purpose": 'Purpose',
+        "dafAccountId": donation.donation_request.daf_account.id,
+        "organisation": {
+            "id": donation.donation_request.organization.id,
+            "name": str(donation.donation_request.organization.name)
+        }
+    }
+
+    return Response(response_data, status=status.HTTP_200_OK)
+
+
+
+@api_view(['PUT'])
+# @permission_classes([IsAuthenticated]) # Secure this endpoint appropriately
+def update_donation_details(request, donation_id):
+    """
+    Updates the details of a single donation by its unique ID.
+    Accepts 'amount', 'approved_at', 'sent_at', and 'purpose' in the request body.
+    """
+    try:
+        # Fetch the donation object that needs to be updated.
+        donation = Donation.objects.select_related(
+            'donation_request'
+        ).get(id=donation_id)
+        
+    except Donation.DoesNotExist:
+        return Response(
+            {"detail": f"Donation with ID {donation_id} not found."},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # --- Update Fields based on Request Data ---
+    data = request.data
+    donation_request = donation.donation_request # Get the related request object
+    
+    # Update 'amount' if provided and valid
+    if 'amount' in data:
+        try:
+            donation.amount = Decimal(data['amount'])
+        except (InvalidOperation, TypeError):
+            return Response({"detail": "Invalid format for 'amount'."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Update 'approved_at' if provided
+    if 'approved_at' in data:
+        # Note: You may want to add date parsing/validation here if needed
+        donation.approved_at = data['approved_at']
+
+    # Update 'sent_at' if provided
+    if 'sent_at' in data:
+        donation.sent_at = data['sent_at']
+        
+    # Update 'purpose' on the related DonationRequest model
+    if 'purpose' in data:
+        donation_request.purpose = data['purpose']
+
+    # Save the updated objects to the database
+    donation.save()
+    donation_request.save()
+
+    # --- Construct and Return the Updated Data ---
+    # The response format matches the GET endpoint for consistency.
+    response_data = {
+        "id": donation.id,
+        "amount": donation.amount,
+        "approvedAt": donation.approved_at,
+        "sentAt": donation.sent_at,
+        "purpose": donation_request.purpose, # Get purpose from the request object
+        "dafAccountId": donation.donation_request.daf_account.id,
+        "organisation": {
+            "id": donation.donation_request.organization.id,
+            "name": str(donation.donation_request.organization.name)
+        }
+    }
+
+    return Response(response_data, status=status.HTTP_200_OK)
