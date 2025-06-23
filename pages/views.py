@@ -21,22 +21,6 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
-# Registration view for creating a new user
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def register_user(request):
-    if request.method == 'POST':
-        serializer = UserRegisterSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            # Generate token for new user
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            }, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -67,6 +51,7 @@ def update_password_by_email(request):
         {"detail": "Password updated successfully."},
         status=status.HTTP_200_OK
     )
+
 
 
 @api_view(['POST'])
@@ -122,118 +107,21 @@ def login_view(request):
 
 
 
-# Create donation recommendation
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def create_recommendation(request):
-    data = request.data
-    rec = DonationRecommendation.objects.create(
-        daf_account_id=data['daf_account_id'],
-        organization_id=data['organization_id'],
-        amount=data['amount'],
-        purpose=data.get('purpose', ''),
-        is_anonymous=data.get('is_anonymous', False),
-        public_acknowledgement=data.get('public_acknowledgement', False),
-        status='pending',
-        submitted_at=timezone.now()
-    )
-    return Response(DonationRecommendationSerializer(rec).data, status=201)
-
-
-
-# Admin can update the recommendation status
-@api_view(['PATCH'])
-@permission_classes([AllowAny])
-def update_recommendation_status(request, id):
-    rec = DonationRecommendation.objects.get(id=id)
-    status = request.data['status']
-    rec.status = status
-    rec.save()
-
-    if status == 'rejected':
-        Message.objects.create(
-            donor_id=rec.daf_account.donor.id,
-            subject="Recommendation Rejected",
-            body=f"Your recommendation to {rec.organization.name} was rejected.",
-            is_read=False,
-            created_at=timezone.now()
-        )
-    return Response({'status': rec.status})
-
-
-
-# Admin approves or rejects donations
-@api_view(['PATCH'])
-@permission_classes([AllowAny])
-def update_donation_status(request, id):
-    donation = Donation.objects.get(id=id)
-    action = request.data['action']  # 'approve' or 'reject'
-
-    if action == 'approve':
-        donation.approved_at = timezone.now()
-        donation.sent_at = timezone.now()
-        donation.save()
-    else:
-        Message.objects.create(
-            donor_id=donation.daf_account.donor.id,
-            subject="Donation Rejected",
-            body=f"Your donation to {donation.organization.name} was rejected.",
-            is_read=False,
-            created_at=timezone.now()
-        )
-        donation.delete()
-        return Response({'status': 'deleted'}, status=204)
-
-    return Response(DonationSerializer(donation).data)
-
-
-
-# Admin uploads receipt
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def upload_receipt(request):
-    data = request.data
-    receipt = DonationReceipt.objects.create(
-        donation_id=data['donation_id'],
-        received_at=timezone.now(),
-        signed_pdf_url=data['signed_pdf_url'],
-        signed_by_name=data['signed_by_name']
-    )
-    return Response(DonationReceiptSerializer(receipt).data, status=201)
-
-
-
-# Direct donation without recommendation but admin approval required
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def direct_donation(request):
-    data = request.data
-    donation = Donation.objects.create(
-        recommendation=None,
-        daf_account_id=data['daf_account_id'],
-        organization_id=data['organization_id'],
-        amount=data['amount']
-    )
-    return Response(DonationSerializer(donation).data, status=201)
-
-
-# Dashboard View
-@api_view(['GET'])
-# @permission_classes([AllowAny])
-def public_donor_dashboard(request, user_id):
-    try:
-        user = CustomUser.objects.get(id=user_id)
-        donor = user.donor
-        if not donor:
-            return Response({"detail": "No donor linked to this user."}, status=404)
-    except CustomUser.DoesNotExist:
-        return Response({"detail": "User not found."}, status=404)
-
+# Helper function to generate dashboard data
+def _get_donor_dashboard_data(donor, user):
+    """
+    Generates the dictionary for the donor dashboard response.
+    """
     donations_qs = Donation.objects.filter(donation_request__donor=donor).order_by('approved_at')
 
     donation_data = []
     running_total = 0
     total_donated = sum(d.amount for d in donations_qs)
+
+    # Avoid division by zero if the goal amount is 0
+    percentage_donated = 0
+    if float(donor.goal_amount) > 0:
+        percentage_donated = round(100 * (float(total_donated) / float(donor.goal_amount)), 3)
 
     for donation in donations_qs:
         running_total += donation.amount
@@ -251,12 +139,103 @@ def public_donor_dashboard(request, user_id):
             "balanceAmount": float(donor.goal_amount) - float(running_total)
         })
 
-    return Response({
+    return {
         "userName": user.username,
         "donorName": donor.full_name,
         "goalAmount": float(donor.goal_amount),
         "currentDonatedAmount": float(total_donated),
         "donations": donation_data,
-        "percentageDonated": round(100 * (float(total_donated) / float(donor.goal_amount)), 3),
+        "percentageDonated": percentage_donated,
         "balanceAmount": float(donor.goal_amount) - float(total_donated)
-    })
+    }
+
+
+# Refactored Dashboard View
+@api_view(['GET'])
+# @permission_classes([AllowAny])
+def public_donor_dashboard(request, user_id):
+    """
+    Retrieves the public dashboard data for a specific donor.
+    """
+    try:
+        user = CustomUser.objects.get(id=user_id)
+        donor = user.donor
+        if not donor:
+            return Response({"detail": "No donor linked to this user."}, status=status.HTTP_404_NOT_FOUND)
+    except CustomUser.DoesNotExist:
+        return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    # Generate and return the dashboard data using the helper
+    dashboard_data = _get_donor_dashboard_data(donor, user)
+    
+    return Response(dashboard_data)
+
+
+
+@api_view(['PUT'])
+# @permission_classes([AllowAny])
+def update_donor_dashboard(request, user_id):
+    """
+    Updates the goal amount for a specific donor and returns the
+    refreshed dashboard data.
+    """
+    try:
+        user = CustomUser.objects.get(id=user_id)
+        donor = user.donor
+        if not donor:
+            return Response(
+                {"detail": "No donor linked to this user."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+    except CustomUser.DoesNotExist:
+        return Response(
+            {"detail": "User not found."}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # 1. Get new goal amount from request body
+    new_goal_amount_str = request.data.get('goalAmount')
+    if new_goal_amount_str is None:
+        return Response(
+            {"detail": "The 'goalAmount' field is required in the request body."}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # 2. Validate the new goal amount
+    try:
+        new_goal_amount = float(new_goal_amount_str)
+        if new_goal_amount < 0:
+            return Response(
+                {"detail": "The 'goalAmount' must be a positive number."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+    except (ValueError, TypeError):
+        return Response(
+            {"detail": "Invalid 'goalAmount' format. Must be a valid number."}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # 3. Update the donor's goal amount and save
+    donor.goal_amount = new_goal_amount
+    donor.save()
+
+    # 4. Generate and return the updated dashboard data using the helper
+    dashboard_data = _get_donor_dashboard_data(donor, user)
+    
+    return Response(dashboard_data, status=status.HTTP_200_OK)
+
+
+
+"""
+{
+    "userName": "daathwi",
+    "donorName": "Daathwi Naagh",
+    "goalAmount": 500000.0,
+    "currentDonatedAmount": 0.0,
+    "donations": [],
+    "percentageDonated": 0.0,
+    "balanceAmount": 500000.0
+}
+"""
