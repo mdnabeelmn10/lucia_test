@@ -47,6 +47,7 @@ def update_goal_view(request):
         return Response({"detail": "DAF not found."}, status=status.HTTP_404_NOT_FOUND)
 
     new_goal_amount = request.data.get('goalAmount')
+    print(new_goal_amount)
     if new_goal_amount is None:
         return Response({"detail": "'goalAmount' is required.", "payload": request.data}, status=status.HTTP_400_BAD_REQUEST)
     
