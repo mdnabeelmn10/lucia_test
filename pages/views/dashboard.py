@@ -46,7 +46,7 @@ def update_goal_view(request):
     if not primary_daf:
         return Response({"detail": "DAF not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    new_goal_amount = request.data.get('goalAmount')
+    new_goal_amount = request.data.get('goal_amount')
     print(type(request.data))
     print(new_goal_amount)
     # print(request.data['goalAmount'])
