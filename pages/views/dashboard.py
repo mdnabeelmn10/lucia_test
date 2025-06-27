@@ -49,7 +49,7 @@ def update_goal_view(request):
     new_goal_amount = request.data.get('goalAmount')
     print(type(request.data))
     print(new_goal_amount)
-    print(request.data['goalAmount'])
+    # print(request.data['goalAmount'])
     if new_goal_amount is None:
         return Response({"detail": "'goalAmount' is required.", "payload": request}, status=status.HTTP_400_BAD_REQUEST)
     
