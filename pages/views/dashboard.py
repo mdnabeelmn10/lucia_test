@@ -36,6 +36,7 @@ def donor_dashboard_view(request):
     data, http_status = _get_dashboard_data(request.user)
     return Response(data, status=http_status)
 
+
 @api_view(['PUT'])
 @permission_classes([permissions.IsAuthenticated])
 def update_goal_view(request):
@@ -47,7 +48,7 @@ def update_goal_view(request):
 
     new_goal_amount = request.data.get('goalAmount')
     if new_goal_amount is None:
-        return Response({"detail": "'goalAmount' is required."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": "'goalAmount' is required.", "payload": request.data}, status=status.HTTP_400_BAD_REQUEST)
     
     try:
         primary_daf.annual_giving_target = float(new_goal_amount)
