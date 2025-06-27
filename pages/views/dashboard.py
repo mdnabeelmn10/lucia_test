@@ -51,7 +51,7 @@ def update_goal_view(request):
     print(new_goal_amount)
     # print(request.data['goalAmount'])
     if new_goal_amount is None:
-        return Response({"detail": "'goalAmount' is required.", "payload": request}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": "'goalAmount' is required.", "payload": request.data.keys()}, status=status.HTTP_400_BAD_REQUEST)
     
     try:
         primary_daf.annual_giving_target = float(new_goal_amount)
