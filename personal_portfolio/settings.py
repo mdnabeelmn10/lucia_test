@@ -11,12 +11,14 @@ SECRET_KEY = 'django-insecure-z$od%-!=m#3fzu2*6c3adcs9om*@$+o7o7@d&((+7rxv2jbe1y
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [
-    'lucia-test.herokuapp.com',
-    'lucia-test1-a0caeccdefd5.herokuapp.com',
-    '127.0.0.1',
-    'localhost'
-]
+# ALLOWED_HOSTS = [
+#     'lucia-test.herokuapp.com',
+#     'lucia-test1-a0caeccdefd5.herokuapp.com',
+#     '127.0.0.1',
+#     'localhost'
+# ]
+
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -122,7 +124,7 @@ REST_FRAMEWORK = {
 }
 
 # CORS & CSRF configuration
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOWED_ORIGINS = [
     "https://luciacharitable.com",
