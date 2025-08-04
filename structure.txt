@@ -1,0 +1,46 @@
+.
+└── lucia_test
+    ├── db.sqlite3
+    ├── manage.py
+    ├── pages
+    │   ├── admin.py
+    │   ├── apps.py
+    │   ├── helpers.py
+    │   ├── __init__.py
+    │   ├── migrations
+    │   │   ├── __init__.py
+    │   │   └── __pycache__
+    │   │       └── __init__.cpython-311.pyc
+    │   ├── models.py
+    │   ├── __pycache__
+    │   │   ├── admin.cpython-311.pyc
+    │   │   ├── apps.cpython-311.pyc
+    │   │   ├── __init__.cpython-311.pyc
+    │   │   ├── models.cpython-311.pyc
+    │   │   ├── urls.cpython-311.pyc
+    │   │   └── views.cpython-311.pyc
+    │   ├── serializers.py
+    │   ├── templates
+    │   │   └── pages
+    │   │       └── home.html
+    │   ├── tests.py
+    │   ├── urls.py
+    │   └── views.py
+    ├── personal_portfolio
+    │   ├── asgi.py
+    │   ├── __init__.py
+    │   ├── Procfile
+    │   ├── __pycache__
+    │   │   ├── __init__.cpython-311.pyc
+    │   │   ├── settings.cpython-311.pyc
+    │   │   ├── urls.cpython-311.pyc
+    │   │   └── wsgi.cpython-311.pyc
+    │   ├── settings.py
+    │   ├── urls.py
+    │   └── wsgi.py
+    ├── Procfile
+    ├── requirements.txt
+    └── structure.txt
+
+10 directories, 32 files
+

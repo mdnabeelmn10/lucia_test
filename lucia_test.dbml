@@ -1,0 +1,121 @@
+Project lucia_db {
+  database_type: "PostgreSQL"
+}
+
+Table CustomUser {
+  id int [pk, increment]
+  password varchar
+  last_login timestamp
+  is_superuser boolean
+  username varchar
+  first_name varchar
+  last_name varchar
+  email varchar
+  is_staff boolean
+  is_active boolean
+  date_joined timestamp
+  donor_id int [ref: > Donor.id, null]
+  role varchar
+}
+
+Table Donor {
+  id int [pk, increment]
+  full_name varchar
+  email varchar [unique]
+  phone varchar
+  goal_amount decimal
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table DAFAccount {
+  id int [pk, increment]
+  donor_id int [ref: > Donor.id]
+  brokerage_url varchar
+  balance decimal
+  created_at timestamp
+}
+
+Table Organization {
+  id int [pk, increment]
+  name varchar
+  ein varchar
+  address text
+  website varchar
+  created_by_donor_id int [ref: > Donor.id, null]
+  created_at timestamp
+}
+
+Table DonationRecommendation {
+  id int [pk, increment]
+  daf_account_id int [ref: > DAFAccount.id]
+  organization_id int [ref: > Organization.id]
+  amount decimal
+  purpose text
+  is_anonymous boolean
+  public_acknowledgement boolean
+  status varchar
+  submitted_at timestamp
+}
+
+Table Admin {
+  id int [pk, increment]
+  name varchar
+  email varchar [unique]
+  role varchar
+}
+
+Table DonationRequest {
+  id int [pk, increment]
+  recommendation_id int [ref: > DonationRecommendation.id, null]
+  donor_id int [ref: > Donor.id]
+  daf_account_id int [ref: > DAFAccount.id]
+  organization_id int [ref: > Organization.id]
+  amount decimal
+  status varchar
+  submitted_at timestamp
+  reviewed_at timestamp
+  reviewed_by_id int [ref: > Admin.id, null]
+}
+
+Table Donation {
+  id int [pk, increment]
+  donation_request_id int [ref: > DonationRequest.id, unique]
+  amount decimal
+  approved_at timestamp
+  sent_at timestamp
+}
+
+Table DonationReceipt {
+  id int [pk, increment]
+  donation_id int [ref: > Donation.id, unique]
+  received_at timestamp
+  signed_pdf_url varchar
+  signed_by_name varchar
+}
+
+Table Vote {
+  id int [pk, increment]
+  recommendation_id int [ref: > DonationRecommendation.id]
+  admin_id int [ref: > Admin.id]
+  decision varchar
+  comment text
+  voted_at timestamp
+}
+
+Table Message {
+  id int [pk, increment]
+  donor_id int [ref: > Donor.id]
+  subject varchar
+  body text
+  is_read boolean
+  created_at timestamp
+}
+
+Table PasswordReset {
+  id int [pk, increment]
+  user_id int [ref: > CustomUser.id]
+  token varchar [unique]
+  created_at timestamp
+  expires_at timestamp
+}
