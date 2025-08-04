@@ -1,6 +1,9 @@
 from pathlib import Path
 import os
+from dotenv import load_dotenv
 import dj_database_url
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 ROOT_URLCONF = 'personal_portfolio.urls'
@@ -38,7 +41,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # 👈 must be high up
+    'corsheaders.middleware.CorsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -71,7 +74,7 @@ WSGI_APPLICATION = 'personal_portfolio.wsgi.application'
 # Database
 DATABASES = {
     'default': dj_database_url.config(
-        default='postgres://u8v6d3k9cdqfil:pd65f4ab8483de9bc348ea378699deaea6ac9435e4e8ca04dc2a4d324856e91c4@cb5ajfjosdpmil.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/d27eo25bqdg6c1'
+        default= os.getenv('DATABASE_URL')
     )
 }
 # DATABASES = {
