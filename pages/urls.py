@@ -1,8 +1,8 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from . import views # This line now imports from your new views folder
-# from .views.donation_details import get_donation_by_id
-from .views.donation_details import DonationDetailView
+from . import views 
+from .views.donation_details import get_donation_by_id
+# from .views.donation_details import DonationDetailView
 
 
 router = DefaultRouter()
@@ -17,9 +17,17 @@ urlpatterns = [
 
     # --- Donor-Specific Endpoints ---
     path('dashboard/', views.donor_dashboard_view, name='dashboard'),
-    # path('dashboard/update-goal/', views.update_goal_view, name='update-goal'),
-    # path('donations/<uuid:donation_id>/', get_donation_by_id, name='get_donation_by_id'),
-    path('donations/<uuid:pk>/', DonationDetailView.as_view(), name='donation-detail'),
+    path('dashboard/update-goal/', views.update_goal_view, name='update-goal'),
+    path('donations/<uuid:donation_id>/', views.get_donation_by_id, name='get_donation_by_id'),
+    path("director-dashboard/", views.director_dashboard_view, name="director-dashboard"),
+    # path('donations/<uuid:pk>/', DonationDetailView.as_view(), name='donation-detail'),
+    path('donations/', views.create_donation, name='create_donation'),
+    path('donations/<uuid:id>/', views.update_donation_status, name='update_donation_status'),
+    path('<uuid:id>/votes/', views.cast_vote, name='cast_vote'),
+    path("charities/", views.create_charity, name="create-charity"),
+    path("", views.submit_funding_request, name="submit-funding-request"),
+    path("all/", views.list_all_funding_requests, name="list-all-funding-requests"),
+    path("<uuid:id>/", views.get_funding_request, name="get-funding-request"),
 
     # --- General API Endpoints ---
     path('api/', include(router.urls)),

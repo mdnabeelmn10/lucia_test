@@ -5,9 +5,29 @@ from django.db.models import Sum
 from ..models import UserRole, DAF, Donation, DonationStatus
 from ..serializers import DonationReadSerializer
 
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def director_dashboard_view(request):
+    """ Returns all donations for Director review. """
+    user = request.user
+    if user.role != UserRole.LUCIA_DIRECTOR:
+        return Response({"detail": "Access denied."}, status=status.HTTP_403_FORBIDDEN)
+
+    donations = Donation.objects.all().order_by('-date_recommended')
+    serialized_donations = DonationReadSerializer(donations, many=True).data
+
+    return Response({
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "role": user.role
+        },
+        "donations": serialized_donations
+    }, status=status.HTTP_200_OK)
+
 def _get_dashboard_data(user):
     """ Helper function to build the dashboard JSON response. """
-    if user.role != UserRole.DONOR_ADVISOR:
+    if user.role != UserRole.DONOR_ADVISORLUCIA_ADMIN:
         return {"detail": "Only Donor Advisors have a dashboard."}, 403
 
     primary_daf = DAF.objects.filter(advisors=user).first()

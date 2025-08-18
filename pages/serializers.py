@@ -1,7 +1,7 @@
 # In your app's serializers.py
 
 from rest_framework import serializers
-from .models import User, DAF, Charity, Donation, Vote
+from .models import User, DAF, Charity, Donation, Vote, Funding_Request
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     """ Serializer for creating a new user. """
@@ -77,3 +77,35 @@ class VoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vote
         fields = ('vote',)
+
+class FundingRequestSerializer(serializers.ModelSerializer):
+    """ Full serializer for internal/admin use. """
+    class Meta:
+        model = Funding_Request
+        fields = [
+            'id',
+            'requesting_organization_name',
+            'contact_person',
+            'organization_address',
+            'purpose',
+            'amount_requested',
+            'status',
+            'is_crowdfund',
+            'target_daf',
+        ]
+        read_only_fields = ['id', 'status']  # status handled internally
+
+
+class FundingRequestPublicSerializer(serializers.ModelSerializer):
+    """ Restricted serializer for public viewing. """
+    class Meta:
+        model = Funding_Request
+        fields = [
+            'id',
+            'requesting_organization_name',
+            'contact_person',
+            'organization_address',
+            'purpose',
+            'amount_requested',
+            'is_crowdfund',
+        ]
