@@ -7,14 +7,19 @@ from ..models import Charity, Funding_Request, FundingRequestStatus
 from ..serializers import CharitySerializer, FundingRequestSerializer
 from ..permissions import IsLuciaAdmin
 
-@api_view(['POST'])
+@api_view(['POST','GET'])
 @permission_classes([IsLuciaAdmin])
 def create_charity(request):
-    serializer = CharitySerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    if request.method == 'POST':
+        serializer = CharitySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        charity = Charity.objects.all()
+        serialized_charity = CharitySerializer(charity, many=True).data
+        return Response(serialized_charity, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 @permission_classes([])  # public endpoint

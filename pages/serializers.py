@@ -1,7 +1,8 @@
 # In your app's serializers.py
 
 from rest_framework import serializers
-from .models import User, DAF, Charity, Donation, Vote, Funding_Request
+from .models import User, DAF, Charity, Donation, Vote, Funding_Request,Document
+
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     """ Serializer for creating a new user. """
@@ -76,7 +77,16 @@ class VoteSerializer(serializers.ModelSerializer):
     """ Serializer for recording votes. """
     class Meta:
         model = Vote
-        fields = ('vote',)
+        fields = ['id', 'donation', 'director', 'vote', 'voted_at']
+        read_only_fields = ['id', 'voted_at']
+
+
+class DocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Document
+        fields = ['id', 'donation', 'funding_request', 'document_type', 'file_url']
+        read_only_fields = ['id', 'donation', 'funding_request']
+
 
 class FundingRequestSerializer(serializers.ModelSerializer):
     """ Full serializer for internal/admin use. """

@@ -27,7 +27,7 @@ def director_dashboard_view(request):
 
 def _get_dashboard_data(user):
     """ Helper function to build the dashboard JSON response. """
-    if user.role != UserRole.DONOR_ADVISORLUCIA_ADMIN:
+    if user.role != UserRole.DONOR_ADVISOR:
         return {"detail": "Only Donor Advisors have a dashboard."}, 403
 
     primary_daf = DAF.objects.filter(advisors=user).first()
