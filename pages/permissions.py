@@ -13,6 +13,10 @@ class IsLuciaDirector(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.role == UserRole.LUCIA_DIRECTOR
 
+class IsDonorAdvisor(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role == UserRole.DONOR_ADVISOR
+    
 class IsOwnerOfObject(permissions.BasePermission):
     """
     Object-level permission to only allow owners of an object to view/edit it.
