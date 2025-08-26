@@ -51,12 +51,34 @@ def update_donation_status(request, id):
 #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# @api_view(['POST'])
+# @permission_classes([IsLuciaDirector])
+# def cast_vote(request, id):
+#     donation = get_object_or_404(Donation, id=id)
+
+#     # prevent duplicate votes by the same director
+#     if Vote.objects.filter(donation=donation, director=request.user).exists():
+#         return Response(
+#             {"detail": "You have already voted on this donation."},
+#             status=status.HTTP_400_BAD_REQUEST
+#         )
+
+#     serializer = VoteSerializer(data=request.data)
+#     if serializer.is_valid():
+#         vote = serializer.save(donation=donation, director=request.user)
+#         return Response(
+#             VoteSerializer(vote).data,
+#             status=status.HTTP_201_CREATED
+#         )
+
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 @api_view(['POST'])
 @permission_classes([IsLuciaDirector])
 def cast_vote(request, id):
     donation = get_object_or_404(Donation, id=id)
 
-    # prevent duplicate votes by the same director
+    # prevent duplicate votes
     if Vote.objects.filter(donation=donation, director=request.user).exists():
         return Response(
             {"detail": "You have already voted on this donation."},
@@ -66,12 +88,15 @@ def cast_vote(request, id):
     serializer = VoteSerializer(data=request.data)
     if serializer.is_valid():
         vote = serializer.save(donation=donation, director=request.user)
-        return Response(
-            VoteSerializer(vote).data,
-            status=status.HTTP_201_CREATED
-        )
+
+        # Optional: also update donation.director_vote for convenience
+        donation.director_vote = vote.vote
+        donation.save(update_fields=["director_vote"])
+
+        return Response(VoteSerializer(vote).data, status=status.HTTP_201_CREATED)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 @api_view(['POST'])
