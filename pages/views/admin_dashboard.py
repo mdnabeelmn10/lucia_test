@@ -33,7 +33,7 @@ def admin_dashboard(request):
             "dafs": "/dafs/",
             "charities": "/charities/",
             "donations": "/donations/",
-            "funding_requests": "/funding-requests/all/"
+            "funding_requests": "/funding-requests/all/",
         }
     }
     return Response(data, status=status.HTTP_200_OK)
