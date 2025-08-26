@@ -4,13 +4,7 @@ from rest_framework import status
 from django.contrib.auth import get_user_model
 
 from ..models import DAF, Charity, Donation, Funding_Request
-from ..serializers import (
-    UserSerializer,
-    DAFSerializer,
-    CharitySerializer,
-    DonationReadSerializer,
-    FundingRequestSerializer
-)
+from ..serializers import UserSerializer,DAFSerializer,CharitySerializer,DonationReadSerializer,FundingRequestSerializer
 from ..permissions import IsLuciaAdmin
 
 User = get_user_model()
@@ -39,7 +33,7 @@ def admin_dashboard(request):
             "dafs": "/dafs/",
             "charities": "/charities/",
             "donations": "/donations/",
-            "funding_requests": "/funding_requests/all/"
+            "funding_requests": "/funding-requests/all/"
         }
     }
     return Response(data, status=status.HTTP_200_OK)

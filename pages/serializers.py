@@ -72,11 +72,10 @@ class DonationWriteSerializer(serializers.ModelSerializer):
 
 
 class VoteSerializer(serializers.ModelSerializer):
-    """ Serializer for recording votes. """
     class Meta:
         model = Vote
         fields = ['id', 'donation', 'director', 'vote', 'voted_at']
-        read_only_fields = ['id', 'voted_at']
+        read_only_fields = ['id', 'donation', 'director', 'voted_at']
 
 
 class DocumentSerializer(serializers.ModelSerializer):
