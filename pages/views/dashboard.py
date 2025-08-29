@@ -2,19 +2,58 @@ from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.db.models import Sum
-from ..models import UserRole, DAF, Donation, DonationStatus
+from ..models import UserRole, DAF, Donation, DonationStatus,Vote
 from ..serializers import DonationReadSerializer
+from rest_framework import serializers
+
+# @api_view(['GET'])
+# @permission_classes([permissions.IsAuthenticated])
+# def director_dashboard_view(request):
+#     """ Returns all donations for Director review. """
+#     user = request.user
+#     if user.role != UserRole.LUCIA_DIRECTOR:
+#         return Response({"detail": "Access denied."}, status=status.HTTP_403_FORBIDDEN)
+
+#     donations = Donation.objects.all().order_by('-date_recommended')
+#     serialized_donations = DonationReadSerializer(donations, many=True).data
+
+#     return Response({
+#         "user": {
+#             "id": user.id,
+#             "username": user.username,
+#             "role": user.role
+#         },
+#         "donations": serialized_donations
+#     }, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def director_dashboard_view(request):
-    """ Returns all donations for Director review. """
+    """ Returns only donations where a Vote by the director exists. """
     user = request.user
     if user.role != UserRole.LUCIA_DIRECTOR:
         return Response({"detail": "Access denied."}, status=status.HTTP_403_FORBIDDEN)
 
-    donations = Donation.objects.all().order_by('-date_recommended')
-    serialized_donations = DonationReadSerializer(donations, many=True).data
+    voted_donation_ids = Vote.objects.filter(director=user).values_list("donation_id", flat=True)
+
+    donations = Donation.objects.filter(id__in=voted_donation_ids).order_by('-date_recommended')
+
+    # Serializer
+    class DirectorDonationSerializer(serializers.ModelSerializer):
+        recipient_charity = serializers.CharField(source="recipient_charity.name", default="-")
+
+        class Meta:
+            model = Donation
+            fields = [
+                "date_recommended",  # Date
+                "recipient_charity", # Organization
+                "amount",            # Amount
+                "purpose",           # Purpose
+                "status",            # Status
+                "id"                 # keep ID so frontend can match with Vote
+            ]
+
+    serialized_donations = DirectorDonationSerializer(donations, many=True).data
 
     return Response({
         "user": {
@@ -24,6 +63,8 @@ def director_dashboard_view(request):
         },
         "donations": serialized_donations
     }, status=status.HTTP_200_OK)
+
+
 
 def _get_dashboard_data(user):
     """ Helper function to build the dashboard JSON response. """

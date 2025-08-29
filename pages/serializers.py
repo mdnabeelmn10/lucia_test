@@ -101,12 +101,58 @@ class DonationWriteSerializer(serializers.ModelSerializer):
             'is_shareable_in_catalog'
         ]
 
+# class DonationReadSerializer(serializers.ModelSerializer):
+#     """
+#     Serializer for reading donation data with nested details + director's vote.
+#     """
+#     recipient_charity = CharitySerializer(read_only=True)
+#     source_daf = DAFSerializer(read_only=True)
+#     director_vote = serializers.SerializerMethodField()
+
+#     class Meta:
+#         model = Donation
+#         fields = [
+#             'id',
+#             'amount',
+#             'purpose',
+#             'is_anonymous',
+#             'status',
+#             'date_recommended',
+#             'recipient_charity',
+#             'source_daf',
+#             'director_vote',
+#         ]
+
+#     def get_director_vote(self, obj):
+#         """
+#         Return the current director's vote if available, otherwise None.
+#         """
+#         request = self.context.get('request', None)
+#         if request is None or not hasattr(request, "user"):
+#             return None
+
+#         user = request.user
+#         if not user.is_authenticated:   # ✅ Ensure user is logged in
+#             return None
+
+#         vote = obj.votes.filter(director=user).first()
+#         return vote.vote if vote else None
+
 
 class VoteSerializer(serializers.ModelSerializer):
+    """
+    Serializer for director votes.
+    """
     class Meta:
         model = Vote
         fields = ['id', 'donation', 'director', 'vote', 'voted_at']
         read_only_fields = ['id', 'donation', 'director', 'voted_at']
+
+# class VoteSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Vote
+#         fields = ['id', 'donation', 'director', 'vote', 'voted_at']
+#         read_only_fields = ['id', 'donation', 'director', 'voted_at']
 
 
 class DocumentSerializer(serializers.ModelSerializer):
