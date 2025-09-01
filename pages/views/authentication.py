@@ -52,3 +52,21 @@ def login_view(request):
             'dafId': daf.id if daf else None,
         }
     }, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def logout_view(request):
+    """ Handles user logout by blacklisting the refresh token. """
+    try:
+        refresh_token = request.data.get("refresh")
+        if not refresh_token:
+            return Response({"detail": "Refresh token required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+
+        return Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"detail": "Invalid or expired token."}, status=status.HTTP_400_BAD_REQUEST)

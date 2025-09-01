@@ -13,6 +13,7 @@ router.register(r'charities', views.CharityViewSet, basename='charity')
 urlpatterns = [
     # --- Authentication Endpoints ---
     path('auth/login/', views.login_view, name='login'),
+    path('auth/logout/', views.logout_view, name='logout'),
     path('auth/register/', views.register_user_view, name='register'),
 
     # --- Donor-Specific Endpoints ---

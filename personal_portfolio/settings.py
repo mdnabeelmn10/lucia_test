@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'corsheaders',  # CORS
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'pages',
     # 'django_q',
 ]
