@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.db.models import Sum
 from ..models import UserRole, DAF, Donation, DonationStatus,Vote
-from ..serializers import DonationReadSerializer
+from ..serializers import DonationReadSerializer,CharitySerializer
 from rest_framework import serializers
 
 # @api_view(['GET'])
@@ -40,8 +40,7 @@ def director_dashboard_view(request):
 
     # Serializer
     class DirectorDonationSerializer(serializers.ModelSerializer):
-        recipient_charity = serializers.CharField(source="recipient_charity.name", default="-")
-
+        recipient_charity = CharitySerializer(read_only=True)
         class Meta:
             model = Donation
             fields = [
