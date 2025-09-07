@@ -8,7 +8,7 @@ from ..serializers import CharitySerializer, FundingRequestSerializer
 from ..permissions import IsLuciaAdmin
 
 @api_view(['POST','GET'])
-@permission_classes([IsLuciaAdmin])
+@permission_classes([])
 def create_charity(request):
     if request.method == 'POST':
         serializer = CharitySerializer(data=request.data)
