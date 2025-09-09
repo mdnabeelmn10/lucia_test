@@ -16,6 +16,7 @@ class DonationStatus(models.TextChoices):
     PENDING_REVIEW = 'pending_review', 'Pending Review'
     COMPLETED = 'completed', 'Completed'
     REJECTED = 'rejected', 'Rejected'
+    APPROVED = 'approved', 'Approved'
 
 class VoteType(models.TextChoices):
     APPROVE = 'approve', 'Approve'
