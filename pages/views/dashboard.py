@@ -36,7 +36,7 @@ def director_dashboard_view(request):
 
     voted_donation_ids = Vote.objects.filter(director=user).values_list("donation_id", flat=True)
 
-    donations = Donation.objects.exclude(id__in=voted_donation_ids).order_by('-date_recommended')
+    donations = Donation.objects.filter(status = "pending_review").exclude(id__in=voted_donation_ids).order_by('-date_recommended')
 
     # Serializer
     class DirectorDonationSerializer(serializers.ModelSerializer):
