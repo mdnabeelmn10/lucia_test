@@ -36,8 +36,8 @@ def director_dashboard_view(request):
 
     voted_donation_ids = Vote.objects.filter(director=user).values_list("donation_id", flat=True)
 
-    donations = Donation.objects.filter(status = "pending_review").exclude(id__in=voted_donation_ids).order_by('-date_recommended')
-
+    new_donations = Donation.objects.filter(status = "pending_review").exclude(id__in=voted_donation_ids).order_by('-date_recommended')
+    old_donations = Donation.objects.filter(id__in=voted_donation_ids).order_by('-date_recommended')
     # Serializer
     class DirectorDonationSerializer(serializers.ModelSerializer):
         recipient_charity = CharitySerializer(read_only=True)
@@ -52,7 +52,8 @@ def director_dashboard_view(request):
                 "id"                 # keep ID so frontend can match with Vote
             ]
 
-    serialized_donations = DirectorDonationSerializer(donations, many=True).data
+    new_serialized_donations = DirectorDonationSerializer(new_donations, many=True).data
+    old_serialized_donations = DirectorDonationSerializer(old_donations, many=True).data
 
     return Response({
         "user": {
@@ -60,7 +61,8 @@ def director_dashboard_view(request):
             "username": user.username,
             "role": user.role
         },
-        "donations": serialized_donations
+        "new_donations": new_serialized_donations,
+        "old_donations": old_serialized_donations
     }, status=status.HTTP_200_OK)
 
 
