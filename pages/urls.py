@@ -34,6 +34,8 @@ urlpatterns = [
 
     path('admin-dashboard/', views.admin_dashboard, name='admin-dashboard'),
 
+    # path('chatbot/', views.NLQueryAPIView.as_view(), name='chatbot'),
+    path('chatbot/', views.NLQueryPandasAPIView.as_view(), name='chatbot'),
     # --- General API Endpoints ---
     path('api/', include(router.urls)),
 ]
