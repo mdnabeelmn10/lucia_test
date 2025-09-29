@@ -192,3 +192,13 @@ class FundingRequestPublicSerializer(serializers.ModelSerializer):
             'amount_requested',
             'is_crowdfund',
         ]
+
+class CharityVerificationSerializer(serializers.Serializer):
+    name = serializers.CharField(allow_null=True, required=False)
+    tin = serializers.CharField(allow_null=True, required=False)
+    address = serializers.CharField(allow_null=True, required=False)
+    website = serializers.URLField(allow_null=True, required=False)
+    contactEmail = serializers.EmailField(allow_null=True, required=False)
+    contactTelephone = serializers.CharField(allow_null=True, required=False)
+    irs_revoked = serializers.BooleanField(default=False)
+    source = serializers.ListField(child=serializers.CharField())
