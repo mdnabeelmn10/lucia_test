@@ -6,11 +6,12 @@ from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions
-from ..models import Donation
+from ..models import Donation,UserRole
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
 openai.api_key = os.getenv("OPENAI_API_KEY")
+
 
 SAFE_PANDAS_METHODS = [
     "head", "tail", "groupby", "sum", "count", "mean", "sort_values"
@@ -100,9 +101,13 @@ class NLQueryPandasAPIView(APIView):
             return Response({"error": "query is required"}, status=400)
 
         # Step 1: Get a manageable dataset for this user
-        qs = Donation.objects.filter(recommending_user=user).order_by("-date_recommended")[:500]
+        if user.role != UserRole.DONOR_ADVISOR:
+            qs = Donation.objects.order_by("-date_recommended")[:500]
+        else:
+            qs = Donation.objects.filter(recommending_user=user).order_by("-date_recommended")[:500]
+
         if not qs.exists():
-            return Response({"answer_text": "You have no donations yet.", "result": {}})
+            return Response({"answer_text": "You have no donations yet.", "result": "No donations found."})
 
         # Step 2: Convert to Pandas
         df = pd.DataFrame(list(qs.values(
