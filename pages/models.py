@@ -71,7 +71,20 @@ class Charity(models.Model):
     contact_name = models.CharField(max_length=255, blank=True, null=True, help_text="A contact person at the organization.")
     contact_email = models.EmailField(blank=True, null=True, help_text="The contact person's email address.")
     contact_telephone = models.CharField(max_length=20, blank=True, null=True, help_text="The contact person's telephone number.")
-    
+    is_verified = models.BooleanField(default=True, help_text="True if this charity was verified/added by Lucia staff. False if auto-added via AI.")
+    source = models.CharField(
+        max_length=20,
+        choices=[("lucia", "Lucia"), ("ai", "AI")],
+        default="lucia",
+        help_text="Shows if the charity record came from Lucia or AI import."
+    )
+    fetched_from_external = models.BooleanField(
+    default=False,
+    help_text="True if this record was auto-fetched from an external source (e.g., GuideStar, CharityAPI)."
+)
+    def __str__(self):
+        return f"{self.name} ({'Verified' if self.is_verified else 'Unverified'})"
+
 class Donation(models.Model):
     """ The "Donation Logbook." This is the most important table, tracking every donation from start to finish. """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
