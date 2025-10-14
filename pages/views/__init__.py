@@ -7,3 +7,4 @@ from .admin_dashboard import *
 from .charity import *
 from .chatbot import *
 from .autocomplete import *
+from .help import *

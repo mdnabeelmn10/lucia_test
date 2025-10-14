@@ -33,11 +33,13 @@ urlpatterns = [
     path("funding-requests/<uuid:id>/", views.get_funding_request, name="get-funding-request"),
 
     path('admin-dashboard/', views.admin_dashboard, name='admin-dashboard'),
+    path('findcharity/', views.find_charity, name="find_charity"),
 
     # path('chatbot/', views.NLQueryAPIView.as_view(), name='chatbot'),
     path('chatbot/', views.NLQueryPandasAPIView.as_view(), name='chatbot'),
     path("verify-charity/", views.verify_charity, name="verify_charity"),
 
+    path("help-form/", views.help_form_view, name="help-form"),
 
     # --- General API Endpoints ---
     path('api/', include(router.urls)),
