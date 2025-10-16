@@ -10,7 +10,7 @@ def help_form_view(request):
     name = request.data.get("name")
     email = request.data.get("email")
     message = request.data.get("message")
-    to_email = request.data.get("to_email", "lucia.helpdesk1@gmail.com")  # default target email
+    to_email = "lucia.helpdesk1@gmail.com"  # default target email
 
     if not all([name, email, message]):
         return Response({"error": "Missing required fields."}, status=400)
