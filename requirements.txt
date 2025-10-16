@@ -18,3 +18,4 @@ python-dotenv==1.0.1
 python-decouple==3.8
 pandas==2.2.3
 openai==0.28.0
+beautifulsoup4  
