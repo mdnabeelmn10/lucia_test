@@ -8,3 +8,4 @@ from .charity import *
 from .chatbot import *
 from .autocomplete import *
 from .help import *
+from .lookup import *
