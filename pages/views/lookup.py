@@ -74,62 +74,188 @@ def get_charity_contact_info(charity_name):
     # print(final)
     return final
 
+# @api_view(["POST"])
+# @permission_classes([permissions.IsAuthenticated])
+# def search_and_update_charity(request):
+#     charity_name = request.data.get("charity_name")
+#     tin = request.data.get("tin")
+
+#     if not charity_name and not tin:
+#         return Response({"error": "Either charity_name or tin is required."},
+#                         status=status.HTTP_400_BAD_REQUEST)
+
+#     if tin:
+#         charity = Charity.objects.filter(tin__iexact=tin).first()
+#     else:
+#         charity = Charity.objects.filter(name__iexact=charity_name).first()
+
+#     if not charity:
+#         return Response({"error": "Charity not found in local database. Only enrichment allowed."},
+#                         status=status.HTTP_404_NOT_FOUND)
+
+#     needs_update = False
+
+#     # ✅ Enrichment via SerpAPI only if website/email/phone missing
+#     if not charity.website and not charity.contact_email and not charity.contact_telephone:
+#         info = get_charity_contact_info(charity.name)
+
+#         if info.get("website") and not charity.website:
+#             charity.website = info.get("website")
+#             needs_update = True
+
+#         if info.get("emails") and not charity.contact_email:
+#             charity.contact_email = info["emails"][0]
+#             needs_update = True
+
+#         if info.get("phones") and not charity.contact_telephone:
+#             charity.contact_telephone = info["phones"][0]
+#             needs_update = True
+
+#     if needs_update:
+#         charity.save()
+
+#     serializer = CharitySerializer(charity)
+#     return Response({
+#         "message": "Charity found and enriched!" if needs_update else "Charity already up to date.",
+#         "charity": serializer.data
+#     }, status=status.HTTP_200_OK)
+
 @api_view(["POST"])
-@permission_classes([permissions.IsAuthenticated])
-def search_and_add_charity(request):
-    charity_name = request.data.get("charity_name")
-    if not charity_name:
-        return Response({"error": "Charity name is required."}, status=status.HTTP_400_BAD_REQUEST)
-    c = charity_name.capitalize()
-    existing = Charity.objects.filter(name__iexact=c).first()
-    if existing:
-        serializer = CharitySerializer(existing)
+@permission_classes([])
+def search_and_update_charity(request):
+    # charity_name = request.data.get("charity_name")
+    charity_name = request.data.get("charity_name") or request.data.get("name")
+
+    tin = request.data.get("tin")
+
+    if not charity_name and not tin:
+        return Response({"error": "Either charity_name or tin is required."},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    if tin:
+        charity = Charity.objects.filter(tin__iexact=tin).first()
+    else:
+        charity = Charity.objects.filter(name__iexact=charity_name).first()
+
+    if not charity:
+        return Response({"error": "Charity not found in local database. Only enrichment allowed."},
+                        status=status.HTTP_404_NOT_FOUND)
+
+    # ✅ Enrich ONLY if ALL 3 are empty/None
+    contact_missing = (
+        (charity.website is None or charity.website.strip() == "")
+        and (charity.contact_email is None or charity.contact_email.strip() == "")
+        and (charity.contact_telephone is None or charity.contact_telephone.strip() == "")
+    )
+
+    if not contact_missing:
+        serializer = CharitySerializer(charity)
         return Response({
             "message": "Charity already exists.",
             "charity": serializer.data
         }, status=status.HTTP_200_OK)
 
-    try:
-        search_url = f"https://projects.propublica.org/nonprofits/api/v2/search.json?q={charity_name}"
-        res = requests.get(search_url, timeout=10)
-        data = res.json()
-        if not data.get("organizations"):
-            return Response({"error": "No results found on ProPublica."}, status=status.HTTP_404_NOT_FOUND)
 
-        top = data["organizations"][0]
-        tin = str(top.get("ein", ""))
-        API_URL = f"https://projects.propublica.org/nonprofits/api/v2/organizations/{tin}.json"
+    # ✅ Allowed to enrich
+    info = get_charity_contact_info(charity.name)
 
-        res = requests.get(API_URL, timeout=10) 
-        data = res.json().get("organization", {})
+    needs_update = False
 
-        if res.status_code == 200:
-            address = f"{data.get('address', '')}, {data.get('city', '')}, {data.get('state', '')}, {data.get('zipcode', '')}"
-            tax_exempt = data.get("exempt_organization_status_code") == 1
-            contact_name = (data.get("careofname") or "").replace('%','').strip().capitalize()
-    except Exception as e:
-        return Response({"error": f"Failed to fetch from ProPublica: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if info.get("website"):
+        charity.website = info["website"]
+        needs_update = True
 
-    # 3️⃣ Get contact info using SerpAPI
-    info = get_charity_contact_info(charity_name)
+    if info.get("emails"):
+        charity.contact_email = info["emails"][0]
+        needs_update = True
 
-    # 4️⃣ Create new Charity record
-    charity = Charity.objects.create(
-        id=uuid.uuid4(),
-        name=charity_name,
-        tin=tin,
-        address=address,
-        website=info.get("website"),
-        contact_name=contact_name,
-        contact_email=info["emails"][0] if info["emails"] else None,
-        contact_telephone=info["phones"][0] if info["phones"] else None,
-        tax_exempt=tax_exempt,
+    if info.get("phones"):
+        charity.contact_telephone = info["phones"][0]
+        needs_update = True
+
+    if needs_update:
+        charity.save()
+        serializer = CharitySerializer(charity)
+        return Response(
+            {"message": "Enrichment successful!", "charity": serializer.data},
+            status=status.HTTP_200_OK
+        )
+    
+    serializer = CharitySerializer(charity)
+    return Response(
+        {"message": "No contact info found online. Nothing updated.","charity": serializer.data},
+        status=status.HTTP_200_OK
     )
 
-    charity.save()
 
-    serializer = CharitySerializer(charity)
-    return Response({
-        "message": "Charity successfully added.",
-        "charity": serializer.data
-    }, status=status.HTTP_201_CREATED)
+
+# @api_view(["POST"])
+# @permission_classes([permissions.IsAuthenticated])
+# def search_and_add_charity(request):
+#     charity_name = request.data.get("charity_name")
+#     tin = request.data.get("tin")
+#     if not charity_name and not tin:
+#         return Response({"error": "Either Charity name or TIN is required."}, status=status.HTTP_400_BAD_REQUEST)
+#     if not tin:
+#         c = charity_name.capitalize()
+#         existing = Charity.objects.filter(name__iexact=c).first()
+#         if existing:
+#             serializer = CharitySerializer(existing)
+#             return Response({
+#                 "message": "Charity already exists.",
+#                 "charity": serializer.data
+#             }, status=status.HTTP_200_OK)
+#     else:
+#         existing = Charity.objects.filter(tin__iexact=tin).first()
+#         if existing:
+#             serializer = CharitySerializer(existing)
+#             return Response({
+#                 "message": "Charity already exists.",
+#                 "charity": serializer.data
+#             }, status=status.HTTP_200_OK)
+
+
+    # try:
+    #     search_url = f"https://projects.propublica.org/nonprofits/api/v2/search.json?q={charity_name}"
+    #     res = requests.get(search_url, timeout=10)
+    #     data = res.json()
+    #     if not data.get("organizations"):
+    #         return Response({"error": "No results found on ProPublica."}, status=status.HTTP_404_NOT_FOUND)
+
+    #     top = data["organizations"][0]
+    #     tin = str(top.get("ein", ""))
+    #     API_URL = f"https://projects.propublica.org/nonprofits/api/v2/organizations/{tin}.json"
+
+    #     res = requests.get(API_URL, timeout=10) 
+    #     data = res.json().get("organization", {})
+
+    #     if res.status_code == 200:
+    #         address = f"{data.get('address', '')}, {data.get('city', '')}, {data.get('state', '')}, {data.get('zipcode', '')}"
+    #         tax_exempt = data.get("exempt_organization_status_code") == 1
+    #         contact_name = (data.get("careofname") or "").replace('%','').strip().capitalize()
+    # except Exception as e:
+    #     return Response({"error": f"Failed to fetch from ProPublica: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # # 3️⃣ Get contact info using SerpAPI
+    # info = get_charity_contact_info(charity_name)
+
+    # # 4️⃣ Create new Charity record
+    # charity = Charity.objects.create(
+    #     id=uuid.uuid4(),
+    #     name=charity_name,
+    #     tin=tin,
+    #     address=address,
+    #     website=info.get("website"),
+    #     contact_name=contact_name,
+    #     contact_email=info["emails"][0] if info["emails"] else None,
+    #     contact_telephone=info["phones"][0] if info["phones"] else None,
+    #     tax_exempt=tax_exempt,
+    # )
+
+    # charity.save()
+
+    # serializer = CharitySerializer(charity)
+    # return Response({
+    #     "message": "Charity successfully added.",
+    #     "charity": serializer.data
+    # }, status=status.HTTP_201_CREATED)
