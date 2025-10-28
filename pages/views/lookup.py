@@ -40,9 +40,10 @@ def get_charity_contact_info(charity_name):
     def scrape_page(url):
         try:
             html = requests.get(url, timeout=10).text
-            emails = re.findall(r'[\w\.-]+@[\w\.-]+\.\w+', html)
+            # emails = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?<!\.\d{1,3})',html)
+            emails = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}',html)
             phones = re.findall(r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', html)
-            emails = list(set([e for e in emails if not e.endswith((".png", ".jpg", ".jpeg"))]))
+            emails = list(set([e for e in emails if not e.endswith((".png", ".jpg", ".jpeg","1","2","3","4","5","6","7","8","9","0"))]))
             phones = list(set(phones))
             return emails, phones, html
         except Exception as e:
@@ -144,7 +145,7 @@ def search_and_update_charity(request):
     # ✅ Enrich ONLY if ALL 3 are empty/None
     contact_missing = (
         (charity.website is None or charity.website.strip() == "")
-        and (charity.contact_email is None or charity.contact_email.strip() == "")
+        or (charity.contact_email is None or charity.contact_email.strip() == "")
         and (charity.contact_telephone is None or charity.contact_telephone.strip() == "")
     )
 
