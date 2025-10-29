@@ -137,6 +137,7 @@ def search_and_update_charity(request):
         charity = Charity.objects.filter(tin__iexact=tin).first()
     else:
         charity = Charity.objects.filter(name__iexact=charity_name).first()
+    
 
     if not charity:
         return Response({"error": "Charity not found in local database. Only enrichment allowed."},
@@ -151,6 +152,7 @@ def search_and_update_charity(request):
 
     if not contact_missing:
         serializer = CharitySerializer(charity)
+        print("Found")
         return Response({
             "message": "Charity already exists.",
             "charity": serializer.data
@@ -177,6 +179,7 @@ def search_and_update_charity(request):
     if needs_update:
         charity.save()
         serializer = CharitySerializer(charity)
+        print("message"+ "Enrichment successful!")
         return Response(
             {"message": "Enrichment successful!", "charity": serializer.data},
             status=status.HTTP_200_OK
