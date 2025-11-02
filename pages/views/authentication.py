@@ -22,12 +22,14 @@ def register_user_view(request):
 @permission_classes([permissions.AllowAny])
 def login_view(request):
     """ Handles user login and returns JWT tokens. """
+    print(request.data)
     serializer = LoginSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     email = serializer.validated_data['email'].lower()
     password = serializer.validated_data['password']
+    print(password)
 
     try:
         user = User.objects.get(email=email)
