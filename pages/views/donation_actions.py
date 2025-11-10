@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404
 from ..models import Donation, DonationStatus, Vote, Document
 from ..serializers import DonationWriteSerializer, DonationReadSerializer, VoteSerializer,DocumentSerializer
 from ..permissions import IsDonorAdvisor, IsLuciaAdmin, IsLuciaDirector
+from .pagination import DonationPagination
 
 
 @api_view(['GET', 'POST'])
@@ -111,3 +112,11 @@ def upload_donation_document(request, donation_id):
         serializer.save(donation=donation)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_donations(request):
+    donations = Donation.objects.all().order_by('id')
+    paginator = DonationPagination()
+    result_page = paginator.paginate_queryset(donations, request)
+    serializer = DonationReadSerializer(result_page, many=True)
+    return paginator.get_paginated_response(serializer.data)

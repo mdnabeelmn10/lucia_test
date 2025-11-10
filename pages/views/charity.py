@@ -11,6 +11,7 @@ from ..serializers import CharitySerializer
 from ..models import Charity, Funding_Request, FundingRequestStatus
 from ..serializers import CharitySerializer, FundingRequestSerializer
 from ..permissions import IsLuciaAdmin
+from .pagination import CharityPagination
 
 class CharityPagination(PageNumberPagination):
     page_size = 50
@@ -152,3 +153,12 @@ def find_charity(request):
         {"found_in_db": False, "found_via_scrape": False},
         status=status.HTTP_404_NOT_FOUND,
     )
+
+@api_view(['GET'])
+@permission_classes([]) 
+def get_charities(request):
+    charities = Charity.objects.all().order_by('id')
+    paginator = CharityPagination()
+    result_page = paginator.paginate_queryset(charities, request)
+    serializer = CharitySerializer(result_page, many=True)
+    return paginator.get_paginated_response(serializer.data)

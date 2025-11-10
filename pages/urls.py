@@ -15,6 +15,8 @@ urlpatterns = [
     path('auth/login/', views.login_view, name='login'),
     path('auth/logout/', views.logout_view, name='logout'),
     path('auth/register/', views.register_user_view, name='register'),
+    path('password-reset/', views.password_reset_request_view, name='password_reset'),
+    path('password-reset/confirm/', views.password_reset_confirm_view, name='password_reset_confirm'),
 
     # --- Donor-Specific Endpoints ---
     path('dashboard/', views.donor_dashboard_view, name='dashboard'),
@@ -41,6 +43,9 @@ urlpatterns = [
     path("lookup/",views.search_and_update_charity, name="lookup"),
 
     path("help-form/", views.help_form_view, name="help-form"),
+    path('get_charities/', views.get_charities, name='get_charities'),
+    path('get_donations/', views.get_donations, name='get_charities'),
+
 
     # --- General API Endpoints ---
     path('api/', include(router.urls)),
