@@ -37,6 +37,7 @@ def admin_dashboard(request):
             "charities": "/charities/",
             "donations": "/donations/",
             "funding_requests": "/funding-requests/all/",
+            "directors": "/directors/",
         }
     }
     return Response(data, status=status.HTTP_200_OK)

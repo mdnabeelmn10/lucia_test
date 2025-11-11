@@ -199,3 +199,8 @@ class CharityVerificationSerializer(serializers.Serializer):
     contactTelephone = serializers.CharField(allow_null=True, required=False)
     irs_revoked = serializers.BooleanField(default=False)
     source = serializers.ListField(child=serializers.CharField())
+
+class DirectorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "role"]
