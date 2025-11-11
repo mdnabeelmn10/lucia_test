@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import User, DAF, Charity, Donation, Vote, Funding_Request,Document
+from .utils import is_majority_approved
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     """ Serializer for creating a new user. """
@@ -45,10 +46,11 @@ class CharityNestedSerializer(serializers.ModelSerializer):
         }
 
 class DonationReadSerializer(serializers.ModelSerializer):
-    """Serializer for reading donation data with nested details + director's vote."""
     recipient_charity = CharitySerializer(read_only=True)
     source_daf = DAFSerializer(read_only=True)
     director_vote = serializers.SerializerMethodField()
+    all_votes = serializers.SerializerMethodField()
+    is_approved = serializers.SerializerMethodField()
 
     class Meta:
         model = Donation
@@ -62,17 +64,58 @@ class DonationReadSerializer(serializers.ModelSerializer):
             'recipient_charity',
             'source_daf',
             'director_vote',
+            'all_votes',
+            'is_approved',
         ]
 
     def get_director_vote(self, obj):
-        """Return the current director's vote if available, otherwise None."""
         request = self.context.get('request', None)
-        if request is None or not hasattr(request, "user"):
+        if not request or not hasattr(request, "user"):
             return None
-
         user = request.user
         vote = obj.votes.filter(director=user).first()
         return vote.vote if vote else None
+
+    def get_all_votes(self, obj):
+        votes = obj.votes.all()
+        return [
+            {"director": v.director.username, "vote": v.vote, "voted_at": v.voted_at}
+            for v in votes
+        ]
+
+    def get_is_approved(self, obj):
+        return is_majority_approved(obj)
+
+
+# class DonationReadSerializer(serializers.ModelSerializer):
+#     """Serializer for reading donation data with nested details + director's vote."""
+#     recipient_charity = CharitySerializer(read_only=True)
+#     source_daf = DAFSerializer(read_only=True)
+#     director_vote = serializers.SerializerMethodField()
+
+#     class Meta:
+#         model = Donation
+#         fields = [
+#             'id',
+#             'amount',
+#             'purpose',
+#             'is_anonymous',
+#             'status',
+#             'date_recommended',
+#             'recipient_charity',
+#             'source_daf',
+#             'director_vote',
+#         ]
+
+#     def get_director_vote(self, obj):
+#         """Return the current director's vote if available, otherwise None."""
+#         request = self.context.get('request', None)
+#         if request is None or not hasattr(request, "user"):
+#             return None
+
+#         user = request.user
+#         vote = obj.votes.filter(director=user).first()
+#         return vote.vote if vote else None
 
 
 class DonationWriteSerializer(serializers.ModelSerializer):
