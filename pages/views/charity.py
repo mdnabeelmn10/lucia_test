@@ -160,5 +160,5 @@ def get_charities(request):
     charities = Charity.objects.all().order_by('id')
     paginator = CharityPagination()
     result_page = paginator.paginate_queryset(charities, request)
-    serializer = CharitySerializer(result_page, many=True)
+    serializer = CharitySerializer(result_page, many=True, context={'request': request})
     return paginator.get_paginated_response(serializer.data)

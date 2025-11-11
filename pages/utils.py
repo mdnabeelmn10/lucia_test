@@ -1,26 +1,23 @@
-# donations/utils.py
-
 from .models import VoteType
+from .models import UserRole
+from .models import User
 
-def get_majority_decision(donation):
+def is_majority_approved(donation):
     """
-    Compute the majority vote for display.
-    Always returns a string (never NaN/None).
+    Returns True if majority of total directors have approved the donation,
+    else False.
+    Abstain/More Info votes don't count.
     """
     votes = list(donation.votes.values_list('vote', flat=True))
 
     approve = votes.count(VoteType.APPROVE)
     disapprove = votes.count(VoteType.DISAPPROVE)
-    abstain = votes.count(VoteType.ABSTAIN)
-    more_info = votes.count(VoteType.MORE_INFO)
 
-    total_votes = len(votes)
-    if total_votes == 0:
-        return "No votes yet"
+    total_directors = User.objects.filter(role=UserRole.LUCIA_DIRECTOR).count()
 
-    if approve > disapprove:
-        return "Majority Approve"
-    elif disapprove > approve:
-        return "Majority Disapprove"
-    else:
-        return "Tie"
+    if total_directors == 0:
+        return False  # safety
+
+    majority_needed = total_directors // 2 + 1
+
+    return approve >= majority_needed

@@ -26,46 +26,82 @@ from rest_framework import serializers
 #         "donations": serialized_donations
 #     }, status=status.HTTP_200_OK)
 
+# @api_view(['GET'])
+# @permission_classes([permissions.IsAuthenticated])
+# def director_dashboard_view(request):
+#     """ Returns only donations where a Vote by the director exists. """
+#     user = request.user
+#     if user.role != UserRole.LUCIA_DIRECTOR:
+#         return Response({"detail": "Access denied."}, status=status.HTTP_403_FORBIDDEN)
+
+#     voted_donation_ids = Vote.objects.filter(director=user).values_list("donation_id", flat=True)
+
+#     new_donations = Donation.objects.filter(status = "pending_review").exclude(id__in=voted_donation_ids).order_by('-date_recommended')
+#     old_donations = Donation.objects.filter(id__in=voted_donation_ids).order_by('-date_recommended')
+#     # Serializer
+#     class DirectorDonationSerializer(serializers.ModelSerializer):
+#         recipient_charity = CharitySerializer(read_only=True)
+#         class Meta:
+#             model = Donation
+#             fields = [
+#                 "date_recommended",  # Date
+#                 "recipient_charity", # Organization
+#                 "amount",            # Amount
+#                 "purpose",           # Purpose
+#                 "status",            # Status
+#                 "id"                 # keep ID so frontend can match with Vote
+#             ]
+
+#     new_serialized_donations = DirectorDonationSerializer(new_donations, many=True).data
+#     old_serialized_donations = DirectorDonationSerializer(old_donations, many=True).data
+
+#     return Response({
+#         "user": {
+#             "id": user.id,
+#             "username": user.username,
+#             "role": user.role
+#         },
+#         "new_donations": new_serialized_donations,
+#         "old_donations": old_serialized_donations
+#     }, status=status.HTTP_200_OK)
+
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def director_dashboard_view(request):
-    """ Returns only donations where a Vote by the director exists. """
     user = request.user
+
     if user.role != UserRole.LUCIA_DIRECTOR:
         return Response({"detail": "Access denied."}, status=status.HTTP_403_FORBIDDEN)
 
     voted_donation_ids = Vote.objects.filter(director=user).values_list("donation_id", flat=True)
 
-    new_donations = Donation.objects.filter(status = "pending_review").exclude(id__in=voted_donation_ids).order_by('-date_recommended')
-    old_donations = Donation.objects.filter(id__in=voted_donation_ids).order_by('-date_recommended')
-    # Serializer
-    class DirectorDonationSerializer(serializers.ModelSerializer):
-        recipient_charity = CharitySerializer(read_only=True)
-        class Meta:
-            model = Donation
-            fields = [
-                "date_recommended",  # Date
-                "recipient_charity", # Organization
-                "amount",            # Amount
-                "purpose",           # Purpose
-                "status",            # Status
-                "id"                 # keep ID so frontend can match with Vote
-            ]
+    new_donations = Donation.objects.filter(
+        status="pending_review"
+    ).exclude(id__in=voted_donation_ids).order_by('-date_recommended')
 
-    new_serialized_donations = DirectorDonationSerializer(new_donations, many=True).data
-    old_serialized_donations = DirectorDonationSerializer(old_donations, many=True).data
+    old_donations = Donation.objects.filter(
+        id__in=voted_donation_ids
+    ).order_by('-date_recommended')
 
-    return Response({
+    new_serialized_donations = DonationReadSerializer(
+        new_donations, many=True, context={'request': request}
+    ).data
+
+    old_serialized_donations = DonationReadSerializer(
+        old_donations, many=True, context={'request': request}
+    ).data
+
+    data = {
         "user": {
             "id": user.id,
             "username": user.username,
-            "role": user.role
+            "role": user.role,
         },
         "new_donations": new_serialized_donations,
-        "old_donations": old_serialized_donations
-    }, status=status.HTTP_200_OK)
+        "old_donations": old_serialized_donations,
+    }
 
-
+    return Response(data, status=status.HTTP_200_OK)
 
 def _get_dashboard_data(user):
     """ Helper function to build the dashboard JSON response. """

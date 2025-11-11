@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import User, DAF, Charity, Donation, Vote, Funding_Request,Document
+from .utils import is_majority_approved
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     """ Serializer for creating a new user. """
@@ -44,14 +45,12 @@ class CharityNestedSerializer(serializers.ModelSerializer):
             'tin': {'validators': []},
         }
 
-from .utils import get_majority_decision
-
 class DonationReadSerializer(serializers.ModelSerializer):
     recipient_charity = CharitySerializer(read_only=True)
     source_daf = DAFSerializer(read_only=True)
     director_vote = serializers.SerializerMethodField()
     all_votes = serializers.SerializerMethodField()
-    majority_decision = serializers.SerializerMethodField()
+    is_approved = serializers.SerializerMethodField()
 
     class Meta:
         model = Donation
@@ -66,7 +65,7 @@ class DonationReadSerializer(serializers.ModelSerializer):
             'source_daf',
             'director_vote',
             'all_votes',
-            'majority_decision',  # <-- new field
+            'is_approved',
         ]
 
     def get_director_vote(self, obj):
@@ -84,8 +83,8 @@ class DonationReadSerializer(serializers.ModelSerializer):
             for v in votes
         ]
 
-    def get_majority_decision(self, obj):
-        return get_majority_decision(obj)
+    def get_is_approved(self, obj):
+        return is_majority_approved(obj)
 
 
 # class DonationReadSerializer(serializers.ModelSerializer):

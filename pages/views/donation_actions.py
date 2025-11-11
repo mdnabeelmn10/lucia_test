@@ -24,7 +24,7 @@ def create_donation(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     if request.method == 'GET':
         donations = Donation.objects.all()
-        serialized_donations = DonationReadSerializer(donations, many=True).data
+        serialized_donations = DonationReadSerializer(donations, many=True,context={'request': request}).data
         return Response(serialized_donations, status=status.HTTP_200_OK)
 
 @api_view(['PATCH'])
@@ -118,5 +118,5 @@ def get_donations(request):
     donations = Donation.objects.all().order_by('id')
     paginator = DonationPagination()
     result_page = paginator.paginate_queryset(donations, request)
-    serializer = DonationReadSerializer(result_page, many=True)
+    serializer = DonationReadSerializer(result_page, many=True, context={'request': request})
     return paginator.get_paginated_response(serializer.data)
