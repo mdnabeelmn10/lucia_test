@@ -2,8 +2,8 @@ from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.db.models import Sum
-from ..models import UserRole, DAF, Donation, DonationStatus,Vote
-from ..serializers import DonationReadSerializer,CharitySerializer
+from ..models import UserRole, DAF, Donation, DonationStatus,Vote,User
+from ..serializers import DonationReadSerializer,CharitySerializer,DirectorSerializer
 from rest_framework import serializers
 
 # @api_view(['GET'])
@@ -161,3 +161,39 @@ def update_goal_view(request):
     
     data, http_status = _get_dashboard_data(user)
     return Response(data, status=http_status)
+
+@api_view(["GET", "POST", "DELETE"])
+@permission_classes([permissions.IsAuthenticated])
+def director_view(request):
+    
+    # Only Admin or Lucia Director can access
+    if request.user.role not in [UserRole.LUCIA_DIRECTOR, UserRole.LUCIA_ADMIN]:
+        return Response({"detail": "Access denied."}, status=status.HTTP_403_FORBIDDEN)
+    
+    # GET → list all directors
+    if request.method == "GET":
+        directors = User.objects.filter(role=UserRole.LUCIA_DIRECTOR)
+        serializer = DirectorSerializer(directors, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    # POST → create a new director
+    elif request.method == "POST":
+        data = request.data.copy()
+        data["role"] = UserRole.LUCIA_DIRECTOR  # enforce director role
+        serializer = DirectorSerializer(data=data)
+        if serializer.is_valid():
+            user = User.objects.create_user(**serializer.validated_data)
+            return Response(DirectorSerializer(user).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    # DELETE → remove a director by ID
+    elif request.method == "DELETE":
+        director_id = request.data.get("id")
+        if not director_id:
+            return Response({"detail": "Director ID required."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            director = User.objects.get(id=director_id, role=UserRole.LUCIA_DIRECTOR)
+            director.delete()
+            return Response({"detail": "Director deleted successfully."}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"detail": "Director not found."}, status=status.HTTP_404_NOT_FOUND)

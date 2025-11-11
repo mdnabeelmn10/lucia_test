@@ -45,6 +45,7 @@ urlpatterns = [
     path("help-form/", views.help_form_view, name="help-form"),
     path('get_charities/', views.get_charities, name='get_charities'),
     path('get_donations/', views.get_donations, name='get_charities'),
+    path("director/", views.director_view, name="director"),
 
 
     # --- General API Endpoints ---
