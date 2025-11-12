@@ -74,29 +74,70 @@ def update_donation_status(request, id):
 
 #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# @api_view(['POST'])
+# @permission_classes([IsLuciaDirector])
+# def cast_vote(request, id):
+#     donation = get_object_or_404(Donation, id=id)
+
+#     # prevent duplicate votes by the same director
+#     if Vote.objects.filter(donation=donation, director=request.user).exists():
+#         return Response(
+#             {"detail": "You have already voted on this donation."},
+#             status=status.HTTP_400_BAD_REQUEST
+#         )
+
+#     serializer = VoteSerializer(data=request.data)
+#     if serializer.is_valid():
+#         vote = serializer.save(donation=donation, director=request.user)
+#         return Response(
+#             VoteSerializer(vote).data,
+#             status=status.HTTP_201_CREATED
+#         )
+
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 @api_view(['POST'])
 @permission_classes([IsLuciaDirector])
 def cast_vote(request, id):
     donation = get_object_or_404(Donation, id=id)
 
-    # prevent duplicate votes by the same director
-    if Vote.objects.filter(donation=donation, director=request.user).exists():
-        return Response(
-            {"detail": "You have already voted on this donation."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
     serializer = VoteSerializer(data=request.data)
-    if serializer.is_valid():
-        vote = serializer.save(donation=donation, director=request.user)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # ✅ Normalize the incoming vote value so frontend "disapprove" or "reject" both work
+    vote_value = serializer.validated_data.get("vote", "").lower().strip()
+
+    # Accept flexible vote values from frontend
+    if vote_value in ["reject", "rejected"]:
+        vote_value = "rejected"
+    elif vote_value in ["disapprove", "disapproved"]:
+        vote_value = "disapprove"
+    elif vote_value in ["approve", "approved"]:
+        vote_value = "approve"
+    elif vote_value in ["moreinfo", "more_info"]:
+        vote_value = "more_info"
+    elif vote_value in ["abstain", "abstained"]:
+        vote_value = "abstain"
+
+    # ✅ Check if this director already voted
+    existing_vote = Vote.objects.filter(donation=donation, director=request.user).first()
+
+    if existing_vote:
+        # ✅ Update existing vote instead of rejecting
+        existing_vote.vote = vote_value
+        existing_vote.save(update_fields=["vote", "voted_at"])
         return Response(
-            VoteSerializer(vote).data,
-            status=status.HTTP_201_CREATED
+            {"message": f"Vote updated to '{vote_value}'.", "data": VoteSerializer(existing_vote).data},
+            status=status.HTTP_200_OK
         )
 
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
+    # ✅ Otherwise, create a new vote
+    vote = serializer.save(donation=donation, director=request.user, vote=vote_value)
+    return Response(
+        {"message": f"Vote '{vote_value}' recorded successfully.", "data": VoteSerializer(vote).data},
+        status=status.HTTP_201_CREATED
+    )
 
 
 @api_view(['POST'])
