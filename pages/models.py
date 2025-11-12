@@ -23,7 +23,7 @@ class VoteType(models.TextChoices):
     DISAPPROVE = 'disapprove', 'Disapprove'
     ABSTAIN = 'abstain', 'Abstain'
     MORE_INFO = 'more_info', 'More Info'
-    REJECTED = 'rejected', 'Rejected'
+    REJECTED = 'reject', 'Reject'
 
 class DocumentType(models.TextChoices):
     SIGNED_RECEIPT = 'signed_receipt', 'Signed Receipt'
