@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.db.models import Sum
 from ..models import UserRole, DAF, Donation, DonationStatus,Vote,User
-from ..serializers import DonationReadSerializer,CharitySerializer,DirectorSerializer
+from ..serializers import DonationReadSerializer,CharitySerializer,DirectorSerializer,DAFSerializer
 from rest_framework import serializers
 
 # @api_view(['GET'])
@@ -119,7 +119,10 @@ def _get_dashboard_data(user):
     recent_donations_qs = Donation.objects.filter(source_daf=primary_daf).order_by('-date_recommended')
 
     return {
-        "user": { "id": user.id, "username": user.username },
+        "user": { "id": user.id,
+                  "username": user.username, 
+                  "sourceDaf": DAFSerializer(primary_daf).data,
+                  },
         "goalAmount": float(goal_amount),
         "currentDonatedAmount": float(total_donated),
         "donations": DonationReadSerializer(recent_donations_qs, many=True).data,
