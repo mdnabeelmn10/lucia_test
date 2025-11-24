@@ -40,12 +40,13 @@ urlpatterns = [
     # path('chatbot/', views.NLQueryAPIView.as_view(), name='chatbot'),
     path('chatbot/', views.NLQueryPandasAPIView.as_view(), name='chatbot'),
     path("verify-charity/", views.verify_charity, name="verify_charity"),
-    path("lookup/",views.search_and_update_charity, name="lookup"),
 
     path("help-form/", views.help_form_view, name="help-form"),
     path('get_charities/', views.get_charities, name='get_charities'),
     path('get_donations/', views.get_donations, name='get_charities'),
     path("director/", views.director_view, name="director"),
+    path("lookup/",views.search_and_update_charity, name="lookup"),
+    path("ai-search/", views.ai_search_charity, name="director"),
 
 
     # --- General API Endpoints ---
