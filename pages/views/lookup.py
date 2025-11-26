@@ -82,27 +82,157 @@ def get_charity_contact_info(charity_name):
     # print(final)
     return final
 
+# @api_view(["POST"])
+# @permission_classes([permissions.AllowAny])
+# def search_and_update_charity(request):
+#     print(request.data)
+#     charity_name = request.data.get("charity_name")
+#     tin = request.data.get("tin")
+
+#     if not charity_name and not tin:
+#         return Response(
+#             {"error": "Either charity_name or tin is required."},
+#             status=status.HTTP_400_BAD_REQUEST
+#         )
+    
+#     if tin != '' and tin:
+#         charity = Charity.objects.filter(tin__iexact=tin).first()
+#         if charity:
+#             serializer = CharitySerializer(charity)
+#             print(f"[FAST EIN LOOKUP] Found: {charity.name}")
+#             return Response({
+#                 "source": "database",
+#                 "message": "Found charity by EIN (no enrichment needed).",
+#                 "matches": [serializer.data],
+#                 "needs_clarification": False,
+#                 "enrichment_done": False,
+#                 "via": "database"
+#             }, status=200)
+#         else:
+#             print(f"[FAST EIN LOOKUP] No match for EIN {tin}")
+
+#     matches = Charity.objects.filter(
+#         Q(name__icontains=charity_name) | Q(tin__iexact=tin)
+#     ).distinct()
+
+#     if not matches.exists():
+#         return Response(
+#             {"error": "Charity not found in local database. Only enrichment allowed."},
+#             status=status.HTTP_404_NOT_FOUND
+#         )
+
+#     def name_similarity(a, b):
+#         try:
+#             return SequenceMatcher(None, a.lower(), b.lower()).ratio()
+#         except Exception:
+#             return 0.0
+
+#     sorted_matches = sorted(
+#         matches,
+#         key=lambda c: name_similarity(charity_name, c.name),
+#         reverse=True
+#     )
+
+#     matches = sorted_matches[:20]  # return only top 20 most similar
+
+#     MAX_ENRICH = 5
+#     enriched = []
+#     any_updated = False
+
+#     for idx, charity in enumerate(matches):
+#         contact_missing = (
+#             (not charity.website or charity.website.strip() == "") and
+#             (not charity.contact_email or charity.contact_email.strip() == "") and
+#             (not charity.contact_telephone or charity.contact_telephone.strip() == "")
+#         )
+
+#         if contact_missing and idx < MAX_ENRICH:
+#             info = get_charity_contact_info(charity.name)
+#             needs_update = False
+
+#             if info.get("website"):
+#                 charity.website = info["website"]
+#                 needs_update = True
+#             if info.get("emails"):
+#                 charity.contact_email = info["emails"][0]
+#                 needs_update = True
+#             if info.get("phones"):
+#                 charity.contact_telephone = info["phones"][0]
+#                 needs_update = True
+
+#             if needs_update:
+#                 charity.save()
+#                 any_updated = True
+#                 print(f"[Enriched] {charity.name}")
+#             else:
+#                 print(f"[No new info] {charity.name}")
+
+#         else:
+#             if contact_missing:
+#                 print(f"[Skipped enrichment for {charity.name}] (beyond top {MAX_ENRICH})")
+#             else:
+#                 print(f"[Already complete] {charity.name}")
+
+#         enriched.append(CharitySerializer(charity).data)
+
+
+#     if len(enriched) == 1:
+#         return Response({
+#             "source": "database",
+#             "message": "Charity record processed successfully.",
+#             "matches": enriched,
+#             "needs_clarification": False,
+#             "enrichment_done": any_updated
+#         }, status=status.HTTP_200_OK)
+
+#     return Response({
+#         "source": "database",
+#         "message": f"Multiple charities found. Showing top {len(enriched)} and enriched top {MAX_ENRICH}.",
+#         "matches": enriched,
+#         "needs_clarification": True,
+#         "enrichment_done": any_updated
+#     }, status=status.HTTP_200_OK)
+
 @api_view(["POST"])
 @permission_classes([permissions.AllowAny])
 def search_and_update_charity(request):
-    charity_name = request.data.get("charity_name") or request.data.get("name")
-    tin = request.data.get("tin")
+    print("[LOOKUP]", request.data)
+    charity_name = (request.data.get("charity_name") or "").strip()
+    tin = (request.data.get("tin") or "").strip()
 
     if not charity_name and not tin:
-        return Response(
-            {"error": "Either charity_name or tin is required."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": "Either charity_name or tin is required."},
+                        status=status.HTTP_400_BAD_REQUEST)
 
-    matches = Charity.objects.filter(
-        Q(name__icontains=charity_name) | Q(tin__iexact=tin)
-    ).distinct()
+    # ✅ Fast EIN-only lookup
+    if tin and not charity_name:
+        charity = Charity.objects.filter(tin__iexact=tin).first()
+        if charity:
+            serializer = CharitySerializer(charity)
+            print(f"[FAST EIN LOOKUP] Found: {charity.name}")
+            return Response({
+                "source": "database",
+                "message": "Found charity by EIN (no enrichment needed).",
+                "matches": [serializer.data],
+                "needs_clarification": False,
+                "enrichment_done": False,
+                "via": "database"
+            }, status=200)
+        else:
+            print(f"[FAST EIN LOOKUP] No match for EIN {tin}")
+            return Response({"error": "No match for EIN."}, status=404)
 
+    # ✅ Normal name or name+EIN lookup
+    filters = Q()
+    if charity_name:
+        filters |= Q(name__icontains=charity_name)
+    if tin:
+        filters |= Q(tin__iexact=tin)
+
+    matches = Charity.objects.filter(filters).distinct()
     if not matches.exists():
-        return Response(
-            {"error": "Charity not found in local database. Only enrichment allowed."},
-            status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({"error": "Charity not found in local database. Only enrichment allowed."},
+                        status=status.HTTP_404_NOT_FOUND)
 
     def name_similarity(a, b):
         try:
@@ -110,13 +240,8 @@ def search_and_update_charity(request):
         except Exception:
             return 0.0
 
-    sorted_matches = sorted(
-        matches,
-        key=lambda c: name_similarity(charity_name, c.name),
-        reverse=True
-    )
-
-    matches = sorted_matches[:20]  # return only top 20 most similar
+    sorted_matches = sorted(matches, key=lambda c: name_similarity(charity_name, c.name), reverse=True)
+    matches = sorted_matches[:20]
 
     MAX_ENRICH = 5
     enriched = []
@@ -124,49 +249,38 @@ def search_and_update_charity(request):
 
     for idx, charity in enumerate(matches):
         contact_missing = (
-            (not charity.website or charity.website.strip() == "") and
-            (not charity.contact_email or charity.contact_email.strip() == "") and
-            (not charity.contact_telephone or charity.contact_telephone.strip() == "")
+            not charity.website and not charity.contact_email and not charity.contact_telephone
         )
 
+        # Only enrich top 5 and only if contact info missing
         if contact_missing and idx < MAX_ENRICH:
             info = get_charity_contact_info(charity.name)
-            needs_update = False
-
+            updated = False
             if info.get("website"):
                 charity.website = info["website"]
-                needs_update = True
+                updated = True
             if info.get("emails"):
                 charity.contact_email = info["emails"][0]
-                needs_update = True
+                updated = True
             if info.get("phones"):
                 charity.contact_telephone = info["phones"][0]
-                needs_update = True
+                updated = True
 
-            if needs_update:
+            if updated:
                 charity.save()
                 any_updated = True
                 print(f"[Enriched] {charity.name}")
-            else:
-                print(f"[No new info] {charity.name}")
-
-        else:
-            if contact_missing:
-                print(f"[Skipped enrichment for {charity.name}] (beyond top {MAX_ENRICH})")
-            else:
-                print(f"[Already complete] {charity.name}")
 
         enriched.append(CharitySerializer(charity).data)
-
 
     if len(enriched) == 1:
         return Response({
             "source": "database",
-            "message": "Charity record processed successfully.",
+            "message": "Single charity record found.",
             "matches": enriched,
             "needs_clarification": False,
             "enrichment_done": any_updated
-        }, status=status.HTTP_200_OK)
+        }, status=200)
 
     return Response({
         "source": "database",
@@ -174,7 +288,313 @@ def search_and_update_charity(request):
         "matches": enriched,
         "needs_clarification": True,
         "enrichment_done": any_updated
-    }, status=status.HTTP_200_OK)
+    }, status=200)
+
+# @api_view(["POST"])
+# @permission_classes([permissions.AllowAny])
+# def ai_search_charity(request):
+#     print(request.data)
+#     name = request.data.get("charity_name") or request.data.get("name")
+#     tin = request.data.get("tin")
+
+#     if not name and not tin:
+#         return Response({"error": "charity_name or EIN required"}, status=400)
+
+#     if tin != '' and tin:
+#         charity = Charity.objects.filter(tin__iexact=tin).first()
+#         if charity:
+#             serializer = CharitySerializer(charity)
+#             print(f"[FAST EIN LOOKUP] Found: {charity.name}")
+#             return Response({
+#                 "source": "database",
+#                 "message": "Found charity by EIN (no enrichment needed).",
+#                 "matches": [serializer.data],
+#                 "needs_clarification": False,
+#                 "enrichment_done": False,
+#                 "via": "database"
+#             }, status=200)
+#         else:
+#             print(f"[FAST EIN LOOKUP] No match for EIN {tin}")
+
+
+#     from django.test import Client
+#     test_client = Client()
+#     lookup_payload = {"charity_name": name or "", "tin": tin or ""}
+#     internal_res = test_client.post(
+#         "/lookup/",
+#         data=json.dumps(lookup_payload),
+#         content_type="application/json"
+#     )
+
+#     if internal_res.status_code == 200:
+#         payload = internal_res.json()
+#         payload["via"] = "database"
+#         return Response(payload, status=200)
+
+#     # 🧠 Build descriptive query for OpenAI
+#     search_descriptor = (
+#         f'name "{name}"' if name else f'EIN (TIN) "{tin}"'
+#     )
+
+#     prompt = f"""
+# You are an assistant that helps identify verified US-based organizations (charities, colleges, churches).
+# The user searched using {search_descriptor}.
+# You must only return organizations based in the United States.
+
+# Return ONLY JSON:
+# {{
+#   "matches": [
+#     {{
+#       "name": "",
+#       "location": "",
+#       "type": "",
+#       "website": "",
+#       "address": "",
+#       "contact_email": "",
+#       "contact_phone": "",
+#       "tin": "",  // EIN - must be present, mandatory
+#       "confidence": 0.0
+#     }}
+#   ],
+#   "needs_clarification": true|false,
+#   "explanation": "brief explanation"
+# }}
+
+# Rules:
+# - Only return US-based entities.
+# - Do not include non-US organizations.
+# - EIN (tin) is mandatory for every match. If EIN is not found, omit that match entirely.
+# """
+
+#     try:
+#         completion = client.chat.completions.create(
+#             model="gpt-4o-mini",
+#             messages=[{"role": "user", "content": prompt}],
+#             response_format={"type": "json_object"}
+#         )
+#         raw = completion.choices[0].message.content
+#         result_json = json.loads(raw) if isinstance(raw, str) else raw
+#     except Exception as e:
+#         return Response({"via": "openai", "error": str(e)}, status=500)
+
+#     # Validate EIN presence
+#     matches = [m for m in result_json.get("matches", []) if m.get("tin")]
+
+#     if not matches:
+#         return Response({
+#             "via": "openai",
+#             "results": {
+#                 "matches": [],
+#                 "needs_clarification": False,
+#                 "explanation": "No valid US-based matches with EIN found."
+#             }
+#         }, status=200)
+
+#     return Response({
+#         "via": "openai",
+#         "results": {
+#             "matches": matches,
+#             "needs_clarification": result_json.get("needs_clarification", False),
+#             "explanation": result_json.get("explanation", "")
+#         }
+#     }, status=200)
+
+@api_view(["POST"])
+@permission_classes([permissions.AllowAny])
+def ai_search_charity(request):
+    print("[AI SEARCH]", request.data)
+    name = (request.data.get("charity_name") or request.data.get("name") or "").strip()
+    tin = (request.data.get("tin") or "").strip()
+
+    if not name and not tin:
+        return Response({"error": "charity_name or EIN required"}, status=400)
+
+    if tin and not name:
+        charity = Charity.objects.filter(tin__iexact=tin).first()
+        if charity:
+            serializer = CharitySerializer(charity)
+            print(f"[FAST EIN LOOKUP] Found: {charity.name}")
+            return Response({
+                "source": "database",
+                "message": "Found charity by EIN (no enrichment needed).",
+                "matches": [serializer.data],
+                "needs_clarification": False,
+                "enrichment_done": False,
+                "via": "database"
+            }, status=200)
+        else:
+            print(f"[FAST EIN LOOKUP] No match for EIN {tin}")
+            return _search_with_openai(f'EIN (TIN) "{tin}"')
+
+    from django.test import Client
+    test_client = Client()
+    lookup_payload = {"charity_name": name, "tin": tin}
+    internal_res = test_client.post(
+        "/lookup/",
+        data=json.dumps(lookup_payload),
+        content_type="application/json"
+    )
+
+    if internal_res.status_code == 200:
+        payload = internal_res.json()
+        payload["via"] = "database"
+        return Response(payload, status=200)
+
+    descriptor = f'name "{name}"' if name else f'EIN "{tin}"'
+    return _search_with_openai(descriptor)
+
+def _search_with_openai(search_descriptor: str):
+    prompt = f"""
+You are an assistant that helps identify verified US-based organizations (charities, colleges, churches).
+The user searched using {search_descriptor}.
+You must only return organizations based in the United States.
+
+Return ONLY JSON:
+{{
+  "matches": [
+    {{
+      "name": "",
+      "location": "",
+      "type": "",
+      "website": "",
+      "address": "",
+      "contact_email": "",
+      "contact_phone": "",
+      "tin": "",
+      "confidence": 0.0
+    }}
+  ],
+  "needs_clarification": true|false,
+  "explanation": "brief explanation"
+}}
+
+Rules:
+- Only return US-based entities.
+- Do not include non-US organizations.
+- EIN (tin) is mandatory for every match. If EIN is not found, omit that match entirely.
+"""
+
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+            timeout=10
+        )
+        raw = completion.choices[0].message.content
+        result_json = json.loads(raw) if isinstance(raw, str) else raw
+    except Exception as e:
+        print(f"[OpenAI Error] {e}")
+        return Response({"via": "openai", "error": str(e)}, status=500)
+
+    matches = [m for m in result_json.get("matches", []) if m.get("tin")]
+
+    if not matches:
+        return Response({
+            "via": "openai",
+            "results": {
+                "matches": [],
+                "needs_clarification": False,
+                "explanation": "No valid US-based matches with EIN found."
+            }
+        }, status=200)
+
+    return Response({
+        "via": "openai",
+        "results": {
+            "matches": matches,
+            "needs_clarification": result_json.get("needs_clarification", False),
+            "explanation": result_json.get("explanation", "")
+        }
+    }, status=200)
+
+# @api_view(["POST"])
+# @permission_classes([permissions.AllowAny])
+# def ai_search_charity(request):
+#     name = request.data.get("charity_name") or request.data.get("name")
+#     tin = request.data.get("tin")
+
+#     if not name and not tin:
+#         return Response({"error": "charity_name or EIN required"}, status=400)
+
+#     # Call lookup first
+#     from django.test import Client
+#     test_client = Client()
+#     internal_res = test_client.post(
+#         "/lookup/",
+#         data=json.dumps({"charity_name": name, "tin": tin}),
+#         content_type="application/json"
+#     )
+
+#     if internal_res.status_code == 200:
+#         payload = internal_res.json()
+#         payload["via"] = "database"
+#         return Response(payload, status=200)
+
+#     # Not found locally → AI Search
+#     prompt = f"""
+# You are an assistant that helps identify verified US-based organizations (charities, colleges, churches).
+# The user searched for: "{name}".
+# You must only return organizations based in the United States.
+
+# Return ONLY JSON:
+# {{
+#   "matches": [
+#     {{
+#       "name": "",
+#       "location": "",
+#       "type": "",
+#       "website": "",
+#       "address": "",
+#       "contact_email": "",
+#       "contact_phone": "",
+#       "tin": "",  // EIN - must be present, mandatory
+#       "confidence": 0.0
+#     }}
+#   ],
+#   "needs_clarification": true|false,
+#   "explanation": "brief explanation"
+# }}
+
+# Rules:
+# - Only return US-based entities.
+# - Do not include non-US organizations.
+# - EIN (tin) is mandatory for every match. If EIN is not found, omit that match entirely.
+# """
+
+#     try:
+#         completion = client.chat.completions.create(
+#             model="gpt-4o-mini",
+#             messages=[{"role": "user", "content": prompt}],
+#             response_format={"type": "json_object"}
+#         )
+#         raw = completion.choices[0].message.content
+#         result_json = json.loads(raw) if isinstance(raw, str) else raw
+#     except Exception as e:
+#         return Response({"via": "openai", "error": str(e)}, status=500)
+
+#     # Validate EIN presence
+#     matches = [m for m in result_json.get("matches", []) if m.get("tin")]
+
+#     if not matches:
+#         return Response({
+#             "via": "openai",
+#             "results": {
+#                 "matches": [],
+#                 "needs_clarification": False,
+#                 "explanation": "No valid US-based matches with EIN found."
+#             }
+#         }, status=200)
+
+#     return Response({
+#         "via": "openai",
+#         "results": {
+#             "matches": matches,
+#             "needs_clarification": result_json.get("needs_clarification", False),
+#             "explanation": result_json.get("explanation", "")
+#         }
+#     }, status=200)
+
 
 # @api_view(["POST"])
 # @permission_classes([permissions.AllowAny])
@@ -510,91 +930,3 @@ def search_and_update_charity(request):
 #             "explanation": explanation
 #         }
 #     }, status=200)
-
-
-@api_view(["POST"])
-@permission_classes([permissions.AllowAny])
-def ai_search_charity(request):
-    name = request.data.get("charity_name") or request.data.get("name")
-    tin = request.data.get("tin")
-
-    if not name and not tin:
-        return Response({"error": "charity_name or EIN required"}, status=400)
-
-    # Call lookup first
-    from django.test import Client
-    test_client = Client()
-    internal_res = test_client.post(
-        "/lookup/",
-        data=json.dumps({"charity_name": name, "tin": tin}),
-        content_type="application/json"
-    )
-
-    if internal_res.status_code == 200:
-        payload = internal_res.json()
-        payload["via"] = "database"
-        return Response(payload, status=200)
-
-    # Not found locally → AI Search
-    prompt = f"""
-You are an assistant that helps identify verified US-based organizations (charities, colleges, churches).
-The user searched for: "{name}".
-You must only return organizations based in the United States.
-
-Return ONLY JSON:
-{{
-  "matches": [
-    {{
-      "name": "",
-      "location": "",
-      "type": "",
-      "website": "",
-      "address": "",
-      "contact_email": "",
-      "contact_phone": "",
-      "tin": "",  // EIN - must be present, mandatory
-      "confidence": 0.0
-    }}
-  ],
-  "needs_clarification": true|false,
-  "explanation": "brief explanation"
-}}
-
-Rules:
-- Only return US-based entities.
-- Do not include non-US organizations.
-- EIN (tin) is mandatory for every match. If EIN is not found, omit that match entirely.
-"""
-
-    try:
-        completion = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"}
-        )
-        raw = completion.choices[0].message.content
-        result_json = json.loads(raw) if isinstance(raw, str) else raw
-    except Exception as e:
-        return Response({"via": "openai", "error": str(e)}, status=500)
-
-    # Validate EIN presence
-    matches = [m for m in result_json.get("matches", []) if m.get("tin")]
-
-    if not matches:
-        return Response({
-            "via": "openai",
-            "results": {
-                "matches": [],
-                "needs_clarification": False,
-                "explanation": "No valid US-based matches with EIN found."
-            }
-        }, status=200)
-
-    return Response({
-        "via": "openai",
-        "results": {
-            "matches": matches,
-            "needs_clarification": result_json.get("needs_clarification", False),
-            "explanation": result_json.get("explanation", "")
-        }
-    }, status=200)
