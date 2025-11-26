@@ -409,7 +409,7 @@ def ai_search_charity(request):
     if not name and not tin:
         return Response({"error": "charity_name or EIN required"}, status=400)
 
-    if tin and not name:
+    if tin:
         charity = Charity.objects.filter(tin__iexact=tin).first()
         if charity:
             serializer = CharitySerializer(charity)
