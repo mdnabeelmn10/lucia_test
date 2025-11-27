@@ -45,9 +45,10 @@ urlpatterns = [
     path('get_charities/', views.get_charities, name='get_charities'),
     path('get_donations/', views.get_donations, name='get_charities'),
     path("director/", views.director_view, name="director"),
-    path("lookup/",views.search_and_update_charity, name="lookup"),
+    # path("lookup/",views.search_and_update_charity, name="lookup"),
     path("ai-search/", views.ai_search_charity, name="director"),
-
+    path("ai/", views.ai_router, name="ai_router"),
+    path("ai-filter/", views.ai_filter_charities, name="ai_filter_charities"),
 
     # --- General API Endpoints ---
     path('api/', include(router.urls)),
