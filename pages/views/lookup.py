@@ -1205,73 +1205,73 @@ Here is the data (JSON list):
         return [], "AI filter failed.", str(e)
 
 
-# @csrf_exempt
-# @api_view(["POST"])
-# @permission_classes([permissions.AllowAny])
-# def ai_filter_charities(request):
-#     """
-#     Takes a list of charity dicts (from previous search) + user filter text,
-#     and uses GPT to return a filtered subset with reasoning.
-#     """
-#     try:
-#         data = request.data
-#         filter_text = data.get("filter_text", "").strip()
-#         charities = data.get("charities", [])
-#         if not filter_text or not charities:
-#             return Response({"error": "filter_text and charities are required."},
-#                             status=status.HTTP_400_BAD_REQUEST)
+@csrf_exempt
+@api_view(["POST"])
+@permission_classes([permissions.AllowAny])
+def ai_filter_charities(request):
+    """
+    Takes a list of charity dicts (from previous search) + user filter text,
+    and uses GPT to return a filtered subset with reasoning.
+    """
+    try:
+        data = request.data
+        filter_text = data.get("filter_text", "").strip()
+        charities = data.get("charities", [])
+        if not filter_text or not charities:
+            return Response({"error": "filter_text and charities are required."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
-#         # Limit to 100 max to save tokens
-#         charities = charities[:100]
+        # Limit to 100 max to save tokens
+        charities = charities[:100]
 
-#         # Build prompt
-#         prompt = f"""
-# You are an intelligent charity data filter.
-# The user wants to filter the charity list below based on this instruction:
-# "{filter_text}"
+        # Build prompt
+        prompt = f"""
+You are an intelligent charity data filter.
+The user wants to filter the charity list below based on this instruction:
+"{filter_text}"
 
-# You will read the JSON list and return only those entries that match the intent.
+You will read the JSON list and return only those entries that match the intent.
 
-# RULES:
-# - Never invent new charities or change data.
-# - If uncertain, include slightly broader results.
-# - Return only JSON in the format:
-# {{"filtered": [ ...subset of original charities... ], "reason": "explain briefly"}}
+RULES:
+- Never invent new charities or change data.
+- If uncertain, include slightly broader results.
+- Return only JSON in the format:
+{{"filtered": [ ...subset of original charities... ], "reason": "explain briefly"}}
 
-# Here is the data (JSON list):
-# {json.dumps(charities, indent=2)}
-# """
+Here is the data (JSON list):
+{json.dumps(charities, indent=2)}
+"""
 
-#         completion = client.chat.completions.create(
-#             model="gpt-4o-mini",
-#             temperature=0.3,
-#             messages=[
-#                 {"role": "system", "content": "You are a precise assistant that filters JSON lists."},
-#                 {"role": "user", "content": prompt},
-#             ],
-#             response_format={"type": "json_object"},
-#             timeout=25,
-#         )
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            temperature=0.3,
+            messages=[
+                {"role": "system", "content": "You are a precise assistant that filters JSON lists."},
+                {"role": "user", "content": prompt},
+            ],
+            response_format={"type": "json_object"},
+            timeout=25,
+        )
 
-#         result = completion.choices[0].message.content
-#         parsed = json.loads(result)
-#         filtered = parsed.get("filtered", [])
-#         reason = parsed.get("reason", "Filtered based on given instruction.")
+        result = completion.choices[0].message.content
+        parsed = json.loads(result)
+        filtered = parsed.get("filtered", [])
+        reason = parsed.get("reason", "Filtered based on given instruction.")
 
-#         print(f"[AI FILTER] '{filter_text}' → {len(filtered)} results")
+        print(f"[AI FILTER] '{filter_text}' → {len(filtered)} results")
 
-#         return Response({
-#             "via": "openai-filter",
-#             "message": reason,
-#             "matches": filtered,
-#             "filter_text": filter_text
-#         }, status=200)
+        return Response({
+            "via": "openai-filter",
+            "message": reason,
+            "matches": filtered,
+            "filter_text": filter_text
+        }, status=200)
 
-#     except Exception as e:
-#         print(f"[AI FILTER ERROR] {e}")
-#         return Response({
-#             "via": "openai-filter",
-#             "error": str(e),
-#             "matches": [],
-#             "message": "AI filter failed."
-#         }, status=500)
+    except Exception as e:
+        print(f"[AI FILTER ERROR] {e}")
+        return Response({
+            "via": "openai-filter",
+            "error": str(e),
+            "matches": [],
+            "message": "AI filter failed."
+        }, status=500)
