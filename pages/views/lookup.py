@@ -23,10 +23,6 @@ client = OpenAI()
 SERP_API_KEY = os.getenv("SERP_API_KEY")
 
 
-# -----------------------------------------------------------------------------
-# Session helpers
-# -----------------------------------------------------------------------------
-
 def _get_context_from_session(request):
     """Retrieve previous charity chat context from session."""
     history = request.session.get("ai_charity_context", [])
@@ -51,10 +47,6 @@ def _store_last_matches(request, matches):
 def _get_last_matches(request):
     return request.session.get("ai_last_matches", [])
 
-
-# -----------------------------------------------------------------------------
-# Optional enrichment via SERP + scraping (same as your original)
-# -----------------------------------------------------------------------------
 
 def get_charity_contact_info(charity_name, address):
     """
@@ -149,11 +141,6 @@ def get_charity_contact_info(charity_name, address):
     all_phones = list(set(all_phones))
 
     return {"website": website, "emails": all_emails, "phones": all_phones}
-
-
-# -----------------------------------------------------------------------------
-# OpenAI helpers (search / intent / filter / chat)
-# -----------------------------------------------------------------------------
 
 def _search_with_openai(search_descriptor: str, previous_context=None):
     """
@@ -384,11 +371,6 @@ Provide a concise, helpful answer. Do NOT invent specific charities or EINs.
         print(f"[OpenAI Chat Error] {e}")
         return "I had trouble answering that. Please try again."
 
-
-# -----------------------------------------------------------------------------
-# Core DB search logic (shared)
-# -----------------------------------------------------------------------------
-
 def _perform_database_search(name: str, tin: str):
     """
     Search local Charity table by name and/or TIN.
@@ -475,7 +457,6 @@ def _perform_search(name: str, tin: str, request):
     previous_context = _get_context_from_session(request)
     user_input = name or tin
 
-    # 1) Fast EIN lookup
     if tin:
         charity = Charity.objects.filter(tin__iexact=tin).first()
         if charity:
@@ -507,7 +488,6 @@ def _perform_search(name: str, tin: str, request):
             openai_result["verified"] = False
             return openai_result
 
-    # 2) DB search by name (and optional tin)
     matches, any_updated, needs_clarification = _perform_database_search(name, tin)
     if matches:
         msg = (
@@ -528,7 +508,6 @@ def _perform_search(name: str, tin: str, request):
         _update_context_session(request, user_input, msg)
         return payload
 
-    # 3) OpenAI fallback when DB has no match
     descriptor = f'name "{name}"' if name else f'EIN "{tin}"'
     openai_result = _search_with_openai(descriptor, previous_context)
     if openai_result.get("via") == "openai":
@@ -540,11 +519,6 @@ def _perform_search(name: str, tin: str, request):
     )
     openai_result["verified"] = False
     return openai_result
-
-
-# -----------------------------------------------------------------------------
-# Public endpoints
-# -----------------------------------------------------------------------------
 
 @csrf_exempt
 @api_view(["POST"])
@@ -675,12 +649,6 @@ Return ONLY JSON like:
         print(f"[INTENT PARSER ERROR] {e}")
         return {"intent": "chat", "charity_name": "", "tin": "", "filter_text": ""}
 
-
-
-# -----------------------------------------------------------------------------
-# NEW: Unified chat + search router with intent detection
-# -----------------------------------------------------------------------------
-
 @csrf_exempt
 @api_view(["POST"])
 @permission_classes([permissions.AllowAny])
@@ -692,7 +660,6 @@ def ai_router(request):
 
     last_matches = _get_last_matches(request)
 
-    # === 1️⃣ If explicit charity_name/tin provided (form-based) ===
     if tin:
         print(f"[AI ROUTER] Direct DB lookup for name='{charity_name}', tin='{tin}'")
         matches, any_updated, needs_clarification = _perform_database_search(charity_name, tin)
@@ -709,13 +676,11 @@ def ai_router(request):
             _update_context_session(request, message or charity_name, payload["message"])
             return Response(payload, status=status.HTTP_200_OK)
 
-        # No DB match → fallback to OpenAI
         openai_result = _search_with_openai(f'name "{charity_name or tin}"')
         openai_result["verified"] = False
         openai_result["source"] = "openai"
         return Response(openai_result, status=status.HTTP_200_OK)
 
-    # === 2️⃣ LLM-based message parsing ===
     parsed = _parse_query_intent_with_llm(message)
     print(f"[AI ROUTER] Parsed LLM intent: {parsed}")
 
@@ -761,10 +726,8 @@ def ai_router(request):
         charity_name = parsed.get("charity_name", "").strip()
         tin = parsed.get("tin", "").strip()
 
-        # 🔹 Step 1: Try searching your verified DB first
         matches, any_updated, needs_clarification = _perform_database_search(charity_name, tin)
 
-        # Include conversation history if frontend sent it
         history = request.data.get("history", [])
         if history and isinstance(history, list):
             context_from_frontend = "\n".join(
@@ -858,20 +821,27 @@ def ai_router(request):
             return Response(payload, status=status.HTTP_200_OK)
 
         print(f"[AI ROUTER] No verified match for '{charity_name}' — using OpenAI fallback search.")
-        descriptor = f'Find real US charity named "{charity_name}" (EIN optional).'
+        descriptor = ""
+        if charity_name != "":
+            descriptor = f'Find real US charity named "{charity_name}" (EIN optional).'
+        if tin:
+            descriptor += f"Heres the EIN - {tin} user searched for.Find real US charity."
+
+        print(descriptor)
 
         openai_result = _search_with_openai(descriptor, combined_context)
         openai_result["verified"] = False
         openai_result["source"] = "openai"
+        print(openai_result)
 
         reply_message = (
-            f"I couldn’t find a verified match for '{charity_name}' in the database, "
+            f"I couldn’t find a verified match for '{charity_name or tin}' in the database, "
             "but here are some real US charities that might be the one you mean. "
             "If none of these look right, tell me more about the charity — maybe its city, type, or purpose — "
             "and I can refine the search for you."
         )
 
-        openai_result["message"] = reply_message
+        openai_result["message"] = openai_result["results"]["explanation"] or reply_message
         _store_last_matches(request, openai_result.get("results", {}).get("matches", []))
         _update_context_session(request, message, reply_message)
 
@@ -896,7 +866,6 @@ def ai_router(request):
         reason = ""
 
         try:
-            # 🧠 Step 1: Try filtering existing charities
             filter_prompt = f"""
     You are an intelligent charity data filter.
     The user wants to filter the charity list below based on this instruction:
@@ -942,7 +911,6 @@ def ai_router(request):
                 "message": "AI filter failed."
             }, status=500)
 
-        # 🧠 Step 2: If no (or irrelevant) matches found → fallback to GPT search
         if not filtered or "none" in reason.lower() or "no matching" in reason.lower():
             print(f"[AI FILTER] No reliable matches for '{filter_text}' → invoking OpenAI fallback search")
 
@@ -1020,7 +988,6 @@ def ai_router(request):
                 reason += " Fallback search failed due to an error."
                 filtered = []
 
-        # 🧩 Step 3: Return final result
         _store_last_matches(request, filtered)
         _update_context_session(request, message, reason)
 
@@ -1038,10 +1005,6 @@ def ai_router(request):
     reply = _chat_with_openai(message, request)
     return Response({"via": "openai-chat", "reply": reply}, status=status.HTTP_200_OK)
 
-
-# -----------------------------------------------------------------------------
-# Public AI filter endpoint (reuses shared helper)
-# -----------------------------------------------------------------------------
 
 @csrf_exempt
 @api_view(["POST"])
