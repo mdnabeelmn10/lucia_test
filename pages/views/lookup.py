@@ -148,6 +148,7 @@ def _search_with_openai(search_descriptor: str, previous_context=None):
     No web_search tool; we just strongly instruct it not to hallucinate EINs.
     Returns: { "via": "openai", "results": { matches: [...], ... } }
     """
+
     context_text = f"\nPrevious context:\n{previous_context}\n" if previous_context else ""
 
     prompt = f"""
@@ -735,7 +736,7 @@ def ai_router(request):
             )
         else:
             context_from_frontend = ""
-
+        print("History : ",history)
         combined_context = (
             (_get_context_from_session(request) or "")
             + "\n"
@@ -769,6 +770,7 @@ def ai_router(request):
                 ],
                 "explanation": "short explanation"
                 }}
+                history : {history}
                 """
 
                 completion = client.chat.completions.create(
