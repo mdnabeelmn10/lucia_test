@@ -65,7 +65,7 @@ class DAF_Advisor(models.Model):
 class Charity(models.Model):
     """ The "Address Book for Charities." It keeps a directory of all the charities that have been recommended. """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255, unique=True, help_text="The official name of the charitable organization.")
+    name = models.CharField(max_length=255, help_text="The official name of the charitable organization.")
     tin = models.CharField(max_length=20, unique=True, help_text="The charity's unique Tax Identification Number.")
     address = models.TextField(help_text="The mailing address for the charity.")
     website = models.URLField(max_length=200, blank=True, null=True, help_text="The charity's official website.")

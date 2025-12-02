@@ -821,20 +821,27 @@ def ai_router(request):
             return Response(payload, status=status.HTTP_200_OK)
 
         print(f"[AI ROUTER] No verified match for '{charity_name}' — using OpenAI fallback search.")
-        descriptor = f'Find real US charity named "{charity_name}" (EIN optional).'
+        descriptor = ""
+        if charity_name != "":
+            descriptor = f'Find real US charity named "{charity_name}" (EIN optional).'
+        if tin:
+            descriptor += f"Heres the EIN - {tin} user searched for.Find real US charity."
+
+        print(descriptor)
 
         openai_result = _search_with_openai(descriptor, combined_context)
         openai_result["verified"] = False
         openai_result["source"] = "openai"
+        print(openai_result)
 
         reply_message = (
-            f"I couldn’t find a verified match for '{charity_name}' in the database, "
+            f"I couldn’t find a verified match for '{charity_name or tin}' in the database, "
             "but here are some real US charities that might be the one you mean. "
             "If none of these look right, tell me more about the charity — maybe its city, type, or purpose — "
             "and I can refine the search for you."
         )
 
-        openai_result["message"] = reply_message
+        openai_result["message"] = openai_result["results"]["explanation"] or reply_message
         _store_last_matches(request, openai_result.get("results", {}).get("matches", []))
         _update_context_session(request, message, reply_message)
 
