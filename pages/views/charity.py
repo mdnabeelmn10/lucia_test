@@ -87,3 +87,17 @@ def get_charities(request):
     result_page = paginator.paginate_queryset(charities, request)
     serializer = CharitySerializer(result_page, many=True, context={'request': request})
     return paginator.get_paginated_response(serializer.data)
+
+@api_view(['PATCH'])
+@permission_classes([])
+def update_charity(request, tin):
+    try:
+        charity = Charity.objects.get(tin=tin)
+    except Charity.DoesNotExist:
+        return Response({"error": "Charity not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = CharitySerializer(charity, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

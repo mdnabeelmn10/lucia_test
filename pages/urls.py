@@ -36,6 +36,7 @@ urlpatterns = [
 
     path('admin-dashboard/', views.admin_dashboard, name='admin-dashboard'),
     path('findcharity/', views.find_charity, name="find_charity"),
+    path('charities/<str:tin>/', views.update_charity, name='update_charity'),
 
     # path('chatbot/', views.NLQueryAPIView.as_view(), name='chatbot'),
     path('chatbot/', views.NLQueryPandasAPIView.as_view(), name='chatbot'),
